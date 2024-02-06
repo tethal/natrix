@@ -15,9 +15,10 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(
-        natrix_test
-        test_example.cpp
+add_executable(natrix_test EXCLUDE_FROM_ALL
+        util/test_arena.cpp
+        util/test_mem.cpp
+        util/test_sb.cpp
 )
 
 target_link_libraries(
@@ -28,3 +29,8 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(natrix_test)
+
+set_target_properties(gtest PROPERTIES EXCLUDE_FROM_ALL TRUE)
+set_target_properties(gmock PROPERTIES EXCLUDE_FROM_ALL TRUE)
+set_target_properties(gtest_main PROPERTIES EXCLUDE_FROM_ALL TRUE)
+set_target_properties(gmock_main PROPERTIES EXCLUDE_FROM_ALL TRUE)

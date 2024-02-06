@@ -11,16 +11,13 @@
  */
 
 #include "natrix/util/panic.h"
-#include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include "natrix/util/log.h"
 
 void panic(int line, const char *file, const char *func, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    fprintf(stderr, "natrix: %s:%d: %s: PANIC: ", file, line, func);
-    vfprintf(stderr, fmt, args);
-    fprintf(stderr, "\n");
+    log_message_v(line, file, func, "PANIC", fmt, args);
     va_end(args);
     exit(1);
 }
