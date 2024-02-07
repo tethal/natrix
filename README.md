@@ -36,8 +36,7 @@ To run a natrix program, use the following command in the `build` directory:
 To build and run the tests, use the following commands in the `build` directory:
 
 ```sh
-make natrix_test
-test/natrix_test
+make check
 ```
 
 

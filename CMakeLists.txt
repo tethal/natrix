@@ -10,6 +10,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(natrix_lib STATIC
+        src/parser/source.c
         src/util/arena.c
         src/util/log.c
         src/util/mem.c
