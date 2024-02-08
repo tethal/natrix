@@ -36,16 +36,16 @@ typedef struct {
 
 /**
  * \brief Initializes the string builder with default capacity.
- * \param sb the string builder to initialize
+ * \return the initialized string builder
  */
-void sb_init(StringBuilder *sb);
+StringBuilder sb_init();
 
 /**
  * \brief Initializes the string builder with given capacity.
- * \param sb the string builder to initialize
  * \param initial_capacity the initial capacity of the string builder, must be greater than 0
+ * \return the initialized string builder
  */
-void sb_init_with_capacity(StringBuilder *sb, size_t initial_capacity);
+StringBuilder sb_init_with_capacity(size_t initial_capacity);
 
 /**
  * \brief Destroys the string builder.

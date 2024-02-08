@@ -21,16 +21,19 @@
 //! Default initial capacity of the string builder.
 #define DEFAULT_CAPACITY 16
 
-void sb_init(StringBuilder *sb) {
-    sb_init_with_capacity(sb, DEFAULT_CAPACITY);
+StringBuilder sb_init() {
+    return sb_init_with_capacity(DEFAULT_CAPACITY);
 }
 
-void sb_init_with_capacity(StringBuilder *sb, size_t initial_capacity) {
+StringBuilder sb_init_with_capacity(size_t initial_capacity) {
     assert(initial_capacity > 0);
-    sb->length = 0;
-    sb->capacity = initial_capacity;
-    sb->str = nx_alloc(initial_capacity);
-    sb->str[0] = '\0';
+    char *str = nx_alloc(initial_capacity);
+    str[0] = '\0';
+    return (StringBuilder) {
+        .length = 0,
+        .capacity = initial_capacity,
+        .str = str
+    };
 }
 
 void sb_free(StringBuilder *sb) {

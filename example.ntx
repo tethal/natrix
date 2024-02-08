@@ -1,1 +1,12 @@
 # Sample natrix source code
+
+# Currently, natrix only tokenizes the input
+# All tokens are printed to the standard output
+
+    # the following line produces an INDENT token
+    (20 - 3) * 6  # comments are considered a part of the NEWLINE token
+            # indentation of empty lines is ignored
+  # invalid indentation is ignored on empty lines
+        4 # another INDENT token on this line
+# the following line produces two DEDENT tokens
+1 + 48 / 4

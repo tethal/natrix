@@ -13,6 +13,7 @@
 #include "natrix/parser/source.h"
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "natrix/util/mem.h"
 
 /**
@@ -20,38 +21,71 @@
  *
  * All occurrences of `\r\n` and standalone `\r` are replaced with `\n`. Ensures that the last character is `\n`
  * and that the string is null-terminated.
- * \param source the source code structure to initialize
  * \param filename the name of the file, will be copied to a new buffer
  * \param src pointer to the start of the source code
  * \param src_end pointer to the character after the last character of the source code
  * \param dst pre-allocated destination buffer, must be at least `src_end - src + 2` bytes long, may be the same as `src`
  */
-static void init_source(Source *source, const char *filename, const char *src, const char *src_end, char *dst) {
+static Source init_source(const char *filename, const char *src, const char *src_end, char *dst) {
     char *filename_copy = nx_alloc(strlen(filename) + 1);
     strcpy(filename_copy, filename);
 
-    source->filename = filename_copy;
-    source->start = dst;
+    const char *start = dst;
+    size_t line_count = 1;
     while (src != src_end) {
-        if (*src == '\r') {
-            *dst++ = '\n';
-            src++;
+        char c = *src++;
+        if (c == '\r') {
+            c = '\n';
             if (*src == '\n') {
                 src++;
             }
-        } else {
-            *dst++ = *src++;
         }
+        if (c == '\n') {
+            line_count++;
+        }
+        *dst++ = c;
     }
-    if (dst == source->start || dst[-1] != '\n') {
+    if (dst == start || dst[-1] != '\n') {
         *dst++ = '\n';
+        line_count++;
     }
     *dst = '\0';
 
-    source->end = dst;
+    return (Source) {
+        .filename = filename_copy,
+        .start = start,
+        .end = dst,
+        .line_count = line_count,
+        .line_starts = NULL,
+    };
 }
 
-bool source_from_file(Source *source, const char *filename) {
+/**
+ * \brief Returns an array of pointers to the start of each line in the source code.
+ *
+ * The array is cached in the source code structure and freed when the source code is freed.
+ * \param source pointer to the source code
+ * \return array of pointers to the start of each line
+ */
+static const char **get_line_starts(Source *source) {
+    if (source->line_starts == NULL) {
+        source->line_starts = (const char **) nx_alloc((source->line_count + 1) * sizeof(char *));
+        const char **line_start = source->line_starts;
+        const char *ptr = source->start;
+        while (ptr < source->end) {
+            *line_start++ = ptr;
+            while (*ptr != '\n') {
+                ptr++;
+            }
+            ptr++;
+        }
+        *line_start++ = ptr;
+        *line_start = ptr + 1;      // simplifies the implementation of source_get_line_end
+    }
+    return source->line_starts;
+}
+
+Source source_from_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         goto error;
@@ -72,26 +106,49 @@ bool source_from_file(Source *source, const char *filename) {
         goto error;
     }
     fclose(file);
-    init_source(source, filename, buffer, buffer + file_size, buffer);
-    return true;
+    return init_source(filename, buffer, buffer + file_size, buffer);
 
 error:
     if (file) {
         fclose(file);
     }
-    source->filename = NULL;
-    source->start = NULL;
-    source->end = NULL;
-    return false;
+    return (Source) {};
 }
 
-void source_from_string(Source *source, const char *filename, const char *string) {
+Source source_from_string(const char *filename, const char *string) {
     size_t src_len = strlen(string);
     char *buffer = nx_alloc(src_len + 2);
-    init_source(source, filename, string, string + src_len, buffer);
+    return init_source(filename, string, string + src_len, buffer);
 }
 
 void source_free(Source *source) {
     nx_free((char *) source->filename);
     nx_free((char *) source->start);
+    nx_free(source->line_starts);
+}
+
+size_t source_get_line_number(Source *source, const char *position) {
+    assert(source->start <= position && position <= source->end);
+    const char **line_starts = get_line_starts(source);
+    size_t low = 0;
+    size_t high = source->line_count;
+    while (low < high) {
+        size_t mid = (low + high) / 2;
+        if (position < line_starts[mid]) {
+            high = mid;
+        } else {
+            low = mid + 1;
+        }
+    }
+    return low;
+}
+
+const char *source_get_line_start(Source *source, size_t line) {
+    assert(line > 0 && line <= source->line_count);
+    return get_line_starts(source)[line - 1];
+}
+
+const char *source_get_line_end(Source *source, size_t line) {
+    assert(line > 0 && line <= source->line_count);
+    return get_line_starts(source)[line] - 1;
 }

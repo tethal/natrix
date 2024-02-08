@@ -9,8 +9,7 @@
 #include "natrix/util/sb.h"
 
 TEST(StringBuilderTest, Empty) {
-    StringBuilder sb;
-    sb_init(&sb);
+    StringBuilder sb = sb_init();
     EXPECT_STREQ(sb.str, "");
     EXPECT_EQ(sb.length, 0);
     EXPECT_EQ(sb.capacity, 16);
@@ -18,8 +17,7 @@ TEST(StringBuilderTest, Empty) {
 }
 
 TEST(StringBuilderTest, AppendChar) {
-    StringBuilder sb;
-    sb_init_with_capacity(&sb, 1);
+    StringBuilder sb = sb_init_with_capacity(1);
     sb_append_char(&sb, 'a');
     EXPECT_STREQ(sb.str, "a");
     EXPECT_EQ(sb.length, 1);
@@ -28,8 +26,7 @@ TEST(StringBuilderTest, AppendChar) {
 }
 
 TEST(StringBuilderTest, AppendStr) {
-    StringBuilder sb;
-    sb_init_with_capacity(&sb, 1);
+    StringBuilder sb = sb_init_with_capacity(1);
     sb_append_str(&sb, "hello");
     EXPECT_STREQ(sb.str, "hello");
     EXPECT_EQ(sb.length, 5);
@@ -38,8 +35,7 @@ TEST(StringBuilderTest, AppendStr) {
 }
 
 TEST(StringBuilderTest, AppendEscapedStr) {
-    StringBuilder sb;
-    sb_init(&sb);
+    StringBuilder sb = sb_init();
     sb_append_escaped_str(&sb, "hello\\\"world\"\n");
     EXPECT_STREQ(sb.str, "hello\\\\\\\"world\\\"\\n");
     EXPECT_EQ(sb.length, 18);
@@ -48,8 +44,7 @@ TEST(StringBuilderTest, AppendEscapedStr) {
 }
 
 TEST(StringBuilderTest, AppendFormatted) {
-    StringBuilder sb;
-    sb_init(&sb);
+    StringBuilder sb = sb_init();
     sb_append_formatted(&sb, "hello %d %s", 42, "world");
     EXPECT_STREQ(sb.str, "hello 42 world");
     EXPECT_EQ(sb.length, 14);
@@ -58,8 +53,7 @@ TEST(StringBuilderTest, AppendFormatted) {
 }
 
 TEST(StringBuilderTest, AppendAll) {
-    StringBuilder sb;
-    sb_init_with_capacity(&sb, 1);
+    StringBuilder sb = sb_init_with_capacity(1);
     sb_append_str(&sb, "hello");
     EXPECT_EQ(sb.length, 5);
     EXPECT_EQ(sb.capacity, 6);
