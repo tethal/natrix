@@ -64,9 +64,9 @@ typedef struct {
 
 /**
  * \brief Initializes the arena allocator.
- * \param arena the arena to initialize
+ * \return the initialized arena
  */
-void arena_init(Arena *arena);
+Arena arena_init();
 
 /**
  * \brief Destroys the arena allocator and deallocates all memory.

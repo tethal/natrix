@@ -9,8 +9,7 @@
 #include "natrix/util/arena.h"
 
 TEST(ArenaTest, SingleChunk) {
-    Arena arena;
-    arena_init(&arena);
+    Arena arena = arena_init();
     EXPECT_EQ(arena.current_chunk, arena.first_chunk);
     EXPECT_EQ(arena.current_chunk->next_chunk, nullptr);
     EXPECT_EQ(arena.current_chunk->ptr, arena.current_chunk->start);
@@ -31,8 +30,7 @@ TEST(ArenaTest, SingleChunk) {
 }
 
 TEST(ArenaTest, TwoChunks) {
-    Arena arena;
-    arena_init(&arena);
+    Arena arena = arena_init();
     EXPECT_EQ(arena.current_chunk, arena.first_chunk);
     EXPECT_EQ(arena.current_chunk->ptr, arena.current_chunk->start);
     EXPECT_EQ(arena.current_chunk->end, arena.current_chunk->start + 8192);
@@ -56,8 +54,7 @@ TEST(ArenaTest, TwoChunks) {
 }
 
 TEST(ArenaTest, SpecialChunk) {
-    Arena arena;
-    arena_init(&arena);
+    Arena arena = arena_init();
     EXPECT_EQ(arena.current_chunk, arena.first_chunk);
     EXPECT_EQ(arena.current_chunk->ptr, arena.current_chunk->start);
     EXPECT_EQ(arena.current_chunk->end, arena.current_chunk->start + 8192);

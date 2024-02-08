@@ -37,10 +37,13 @@ static ArenaChunk *alloc_chunk(size_t size_in_bytes) {
     return chunk;
 }
 
-void arena_init(Arena *arena) {
-    arena->first_chunk = alloc_chunk(DEFAULT_CHUNK_SIZE);
-    arena->current_chunk = arena->first_chunk;
-    arena->alloc_count = 0;
+Arena arena_init() {
+    ArenaChunk *chunk = alloc_chunk(DEFAULT_CHUNK_SIZE);
+    return (Arena) {
+        .first_chunk = chunk,
+        .current_chunk = chunk,
+        .alloc_count = 0,
+    };
 }
 
 void arena_free(Arena *arena) {
