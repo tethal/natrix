@@ -27,8 +27,7 @@
 static Token make_token(const Lexer *lexer, TokenType type) {
     Token token = (Token) {type, lexer->start, lexer->current};
 #if ENABLE_TOKEN_LOGGING
-    StringBuilder sb;
-    sb_init(&sb);
+    StringBuilder sb = sb_init();
     token_to_string(&token, &sb);
     LOG_INFO("%s", sb.str);
     sb_free(&sb);

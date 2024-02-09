@@ -42,6 +42,7 @@ TEST(LexerTest, EmptySource) {
     EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_EOF, ""}));
     EXPECT_EQ(lexer_error_message(&lexer), nullptr);
 }
+
 TEST(LexerTest, SingleComment) {
     Lexer lexer;
     lexer_init(&lexer, "# comment\n");

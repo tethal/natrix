@@ -12,14 +12,17 @@
 
 #include "natrix/parser/token.h"
 
+/**
+ * \brief Names of token types.
+ */
+static const char *TOKEN_TYPE_NAMES[] = {
+    #define TT(x) [TOKEN_##x] = #x,
+    #include "natrix/parser/token_types.inc"
+    #undef TT
+};
+
 const char *token_get_type_name(const TokenType type) {
-    switch (type) {
-        #define TT(x) case TOKEN_##x: return #x;
-        #include "natrix/parser/token_types.inc"
-        #undef TT
-        default:
-            return "UNKNOWN";
-    }
+    return type >= 0 && type < TOKEN_TYPE_COUNT ? TOKEN_TYPE_NAMES[type] : "UNKNOWN";
 }
 
 void token_to_string(const Token *token, StringBuilder *sb) {

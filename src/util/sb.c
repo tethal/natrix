@@ -12,7 +12,6 @@
 
 #include "natrix/util/sb.h"
 #include <assert.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "natrix/util/mem.h"
@@ -127,17 +126,23 @@ void sb_append_formatted(StringBuilder *sb, const char *format, ...) {
     assert(sb->str != NULL);
     va_list args;
     va_start(args, format);
-    int char_count = vsnprintf(NULL, 0, format, args);
+    sb_append_formatted_v(sb, format, args);
+    va_end(args);
+}
+
+void sb_append_formatted_v(StringBuilder *sb, const char *format, va_list args) {
+    assert(sb->str != NULL);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int char_count = vsnprintf(NULL, 0, format, args_copy);
     if (char_count < 0) {
         PANIC("vsnprintf failed");
     }
-    va_end(args);
+    va_end(args_copy);
     sb_ensure_can_append(sb, char_count);
-    va_start(args, format);
     int result = vsnprintf(sb->str + sb->length, char_count + 1, format, args);
     if (result != char_count) {
         PANIC("vsnprintf failed");
     }
-    va_end(args);
     sb->length += char_count;
 }

@@ -21,6 +21,7 @@
 extern "C" {
 #endif
 
+#include <stdarg.h>
 #include <stddef.h>
 
 /**
@@ -119,6 +120,14 @@ void sb_append_escaped_str_len(StringBuilder *sb, const char *str, size_t length
  * \param ... the format arguments
  */
 void sb_append_formatted(StringBuilder *sb, const char *format, ...) __attribute__((format(printf, 2, 3)));
+
+/**
+ * \brief Appends a formatted string to the string builder.
+ * \param sb the string builder to append to
+ * \param format the format string, as in `printf`
+ * \param args the format arguments
+ */
+void sb_append_formatted_v(StringBuilder *sb, const char *format, va_list args) __attribute__((format(printf, 2, 0)));
 
 #ifdef __cplusplus
 }

@@ -10,52 +10,87 @@
  * \brief Entry point of the interpreter.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include "natrix/parser/diag.h"
-#include "natrix/parser/lexer.h"
+#include "natrix/parser/parser.h"
+#include "natrix/util/panic.h"
 
 /**
- * \brief Prints a token to the standard output.
- * \param source the source code
- * \param token the token to print
- * \param last_line pointer the line number of the last printed token, will be updated
+ * \brief Evaluates the given binary operation.
+ * \param left left operand
+ * \param op binary operation
+ * \param right right operand
+ * \return the result of the operation
  */
-static void print_token(Source *source, Token *token, size_t *last_line) {
-    StringBuilder sb = sb_init();
-    size_t line = source_get_line_number(source, token->start);
-    size_t column = token->start - source_get_line_start(source, line) + 1;
-    if (line != *last_line) {
-        *last_line = line;
-        sb_append_formatted(&sb, "%4zu ", line);
-    } else {
-        sb_append_str(&sb, "   . ");
+static int64_t eval_binop(int64_t left, BinaryOp op, int64_t right) {
+    switch (op) {
+        case BINOP_ADD:
+            return left + right;
+        case BINOP_SUB:
+            return left - right;
+        case BINOP_MUL:
+            return left * right;
+        case BINOP_DIV:
+            if (right == 0) {
+                PANIC("Division by zero");
+            }
+            return left / right;
+        default:
+            assert(0);
     }
-    sb_append_formatted(&sb, "%4zu %4zu %-15s ", column, token->end - token->start, token_get_type_name((*token).type));
-    sb_append_escaped_str_len(&sb, token->start, token->end - token->start);
-    puts(sb.str);
-    sb_free(&sb);
 }
 
 /**
- * \brief Prints a table of tokens in the source code to the standard output.
+ * \brief Evaluates the given expression.
+ * \param expr the expression to evaluate
+ * \return the result of the expression
+ */
+static int64_t eval_expr(const Expr *expr) {
+    switch (expr->kind) {
+        case EXPR_INT_LITERAL: {
+            int64_t value = 0;
+            for (const char *ptr = expr->literal.start; ptr < expr->literal.end; ptr++) {
+                value = value * 10 + (*ptr - '0');
+                if (value < 0) {
+                    PANIC("Integer literal too large");
+                }
+            }
+            return value;
+        }
+        case EXPR_BINARY:
+            return eval_binop(eval_expr(expr->binary.left), expr->binary.op, eval_expr(expr->binary.right));
+        default:
+            assert(0);
+    }
+}
+
+/**
+ * \brief Executes the given statement.
+ * \param stmt the statement
+ */
+static void exec_stmt(const Stmt *stmt) {
+    switch (stmt->kind) {
+        case STMT_EXPR:
+            printf("%ld\n", eval_expr(stmt->expr));
+            break;
+        default:
+            assert(0);
+    }
+}
+
+/**
+ * \brief Parses and executes the given source code.
  * \param source the source code
  */
-void print_tokens(Source *source) {
-    Lexer lexer;
-    lexer_init(&lexer, source->start);
-    size_t last_line = 0;
-    printf("Line  Col  Len Token           Lexeme\n");
-    while (1) {
-        Token token = lexer_next_token(&lexer);
-        print_token(source, &token, &last_line);
-        if (token.type == TOKEN_ERROR) {
-            diag_default_handler(NULL, DIAG_ERROR, source, token.start, token.end, "%s", lexer_error_message(&lexer));
-            break;
-        }
-        if (token.type == TOKEN_EOF) {
-            break;
-        }
+static void run(Source *source) {
+    Arena arena = arena_init();
+    Stmt *stmt = parse_file(&arena, source, diag_default_handler, NULL);
+    while (stmt) {
+        exec_stmt(stmt);
+        stmt = stmt->next;
     }
+    arena_free(&arena);
 }
 
 /**
@@ -72,6 +107,6 @@ int main(const int argc, char **argv) {
         fprintf(stderr, "Unable to read file %s\n", argv[1]);
         return 1;
     }
-    print_tokens(&source);
+    run(&source);
     source_free(&source);
 }

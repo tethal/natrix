@@ -1,12 +1,9 @@
 # Sample natrix source code
 
-# Currently, natrix only tokenizes the input
-# All tokens are printed to the standard output
+# Currently, natrix programs are just simple expressions, one per line, with no leading whitespaces
+# See doc/grammar.md
 
-    # the following line produces an INDENT token
-    (20 - 3) * 6  # comments are considered a part of the NEWLINE token
-            # indentation of empty lines is ignored
-  # invalid indentation is ignored on empty lines
-        4 # another INDENT token on this line
-# the following line produces two DEDENT tokens
+# The result of each expression is printed to the standard output
+
+(10 - 3) * 6  # comments are ignored
 1 + 48 / 4

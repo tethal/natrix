@@ -41,6 +41,7 @@ typedef enum {
     #define TT(x) TOKEN_##x,
     #include "token_types.inc"
     #undef TT
+    TOKEN_TYPE_COUNT
 } TokenType;
 
 /**
