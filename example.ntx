@@ -1,9 +1,12 @@
 # Sample natrix source code
 
-# Currently, natrix programs are just simple expressions, one per line, with no leading whitespaces
+# Currently, natrix programs are sequences of assignments and simple expressions, one per line, with no leading whitespaces
 # See doc/grammar.md
 
-# The result of each expression is printed to the standard output
+# Assignments are evaluated, but their results are not printed
+# Expressions are evaluated and their results are printed to the standard output
+# Variable `arg` contains the value of the first command line argument, or 0 if there are no arguments
 
-(10 - 3) * 6  # comments are ignored
-1 + 48 / 4
+a = 17 - arg
+b = (arg + 1) * 50
+b / 2 + a

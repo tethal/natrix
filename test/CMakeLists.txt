@@ -3,7 +3,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
@@ -17,6 +17,7 @@ enable_testing()
 add_custom_target(check COMMAND $<TARGET_FILE:natrix_test> DEPENDS natrix_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test-data)
 
 add_executable(natrix_test EXCLUDE_FROM_ALL
+        parser/test_ast.cpp
         parser/test_lexer.cpp
         parser/test_parser.cpp
         parser/test_source.cpp

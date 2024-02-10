@@ -11,7 +11,10 @@ statements:
     statement
     | statement statements
 
-statement: expression NEWLINE
+statement: simple_statement NEWLINE
+simple_statement: 
+    expression EQUALS expression
+    | expression
 ```
 
 ### Expressions
@@ -28,5 +31,6 @@ multiplicative_expr:
 
 primary:
     INT_LITERAL
+    | IDENTIFIER
     | LPAREN expression RPAREN
 ```

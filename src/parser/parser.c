@@ -77,6 +77,7 @@ static Expr *expression(Parser *parser);
  * \code
  * primary:
  *    INT_LITERAL
+ *    | IDENTIFIER
  *    | LPAREN expression RPAREN
  * \endcode
  */
@@ -84,6 +85,10 @@ static Expr *primary(Parser *parser) {
     if (parser->current.type == TOKEN_INT_LITERAL) {
         Token t = consume(parser);
         return ast_create_expr_int_literal(parser->arena, t.start, t.end);
+    }
+    if (parser->current.type == TOKEN_IDENTIFIER) {
+        Token t = consume(parser);
+        return ast_create_expr_name(parser->arena, t.start, t.end);
     }
     if (parser->current.type == TOKEN_LPAREN) {
         consume(parser);
@@ -144,13 +149,38 @@ static Expr *expression(Parser *parser) {
 
 /**
  * \code
- * statement: expression NEWLINE
+ * simple_statement:
+ *     expression EQUALS expression NEWLINE
+ *     | expression NEWLINE
+ * \endcode
+ */
+static Stmt *simple_statement(Parser *parser) {
+    Expr *expr = expression(parser);
+    if (!expr) {
+        return NULL;
+    }
+    if (parser->current.type != TOKEN_EQUALS) {
+        return ast_create_stmt_expr(parser->arena, expr);
+    }
+    if (expr->kind != EXPR_NAME) {
+        parser->diag_handler(parser->diag_data, DIAG_ERROR, parser->source, ast_get_expr_start(expr),
+                             ast_get_expr_end(expr), "cannot assign to expression here");
+        return NULL;
+    }
+    consume(parser);
+    Expr *right = expression(parser);
+    return right ? ast_create_stmt_assignment(parser->arena, expr, right) : NULL;
+}
+
+/**
+ * \code
+ * statement: simple_statement NEWLINE
  * \endcode
  */
 static Stmt *statement(Parser *parser) {
-    Expr *expr = expression(parser);
-    if (expr && match(parser, TOKEN_NEWLINE, "expected end of line")) {
-        return ast_create_stmt_expr(parser->arena, expr);
+    Stmt *stmt = simple_statement(parser);
+    if (stmt && match(parser, TOKEN_NEWLINE, "expected end of line")) {
+        return stmt;
     }
     return NULL;
 }
@@ -169,7 +199,7 @@ static Stmt *statements(Parser *parser, TokenType sentinel) {
         last->next = statement(parser);
         last = last->next;
     }
-    return result;
+    return last ? result : NULL;
 }
 
 Stmt *parse_file(Arena *arena, Source *source, DiagHandler diag_handler, void *diag_data) {

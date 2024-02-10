@@ -1,0 +1,12 @@
+AST dump:
+  STMT_EXPR
+    EXPR_BINARY {op: MUL}
+      left: EXPR_BINARY {op: SUB}
+        left: EXPR_INT_LITERAL {literal: "10"}
+        right: EXPR_INT_LITERAL {literal: "3"}
+      right: EXPR_INT_LITERAL {literal: "6"}
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "_a1"}
+    right: EXPR_BINARY {op: MUL}
+      left: EXPR_NAME {identifier: "b8_c"}
+      right: EXPR_INT_LITERAL {literal: "6"}

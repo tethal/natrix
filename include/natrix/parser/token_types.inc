@@ -11,6 +11,7 @@ TT(ERROR)         // error
 TT(NEWLINE)       // new line
 TT(INDENT)        // indentation level increased
 TT(DEDENT)        // indentation level decreased
+TT(IDENTIFIER)    // [a-zA-Z_][a-zA-Z0-9_]*
 
 // symbols
 TT(PLUS)          // +
@@ -19,6 +20,7 @@ TT(STAR)          // *
 TT(SLASH)         // /
 TT(LPAREN)        // (
 TT(RPAREN)        // )
+TT(EQUALS)        // =
 
 // literals
 TT(INT_LITERAL)   // [0-9]+

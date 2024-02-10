@@ -6,6 +6,10 @@
  */
 
 #include <gtest/gtest.h>
+#include <filesystem>
+#include <iostream>
+#include <string>
+#include <fstream>
 #include "natrix/parser/parser.h"
 
 static void diag_handler(void *data, DiagKind kind, Source *source, const char *start, const char *end, const char *fmt, ...) {
@@ -42,28 +46,6 @@ static std::string parse_and_capture_diag(const char *source) {
     return diags[0];
 }
 
-TEST(ParserTest, SimpleExpression) {
-    Source src = source_from_string("<string>", "(10 - 3) * 6\n1");
-    Arena arena = arena_init();
-    Stmt *stmt = parse_file(&arena, &src, diag_default_handler, nullptr);
-    StringBuilder sb = sb_init();
-    ast_dump(&sb, stmt);
-    EXPECT_STREQ(sb.str,
-                 "AST dump:\n"
-                 "  STMT_EXPR\n"
-                 "    EXPR_BINARY {op: MUL}\n"
-                 "      left: EXPR_BINARY {op: SUB}\n"
-                 "        left: EXPR_INT_LITERAL {literal: \"10\"}\n"
-                 "        right: EXPR_INT_LITERAL {literal: \"3\"}\n"
-                 "      right: EXPR_INT_LITERAL {literal: \"6\"}\n"
-                 "  STMT_EXPR\n"
-                 "    EXPR_INT_LITERAL {literal: \"1\"}\n"
-    );
-    sb_free(&sb);
-    arena_free(&arena);
-    source_free(&src);
-}
-
 TEST(ParserTest, InvalidToken) {
     std::string diag = parse_and_capture_diag("(10 - 3) ` 6\n1");
     EXPECT_EQ(diag, "error: 1:10-1: unexpected character");
@@ -77,4 +59,44 @@ TEST(ParserTest, MissingParen) {
 TEST(ParserTest, ExpectedExpression) {
     std::string diag = parse_and_capture_diag("\n(10 -\n");
     EXPECT_EQ(diag, "error: 2:6-1: expected expression");
+}
+
+TEST(ParserTest, InvalidLhsOfAssignment) {
+    std::string diag = parse_and_capture_diag("a + 3 = 1");
+    EXPECT_EQ(diag, "error: 1:1-5: cannot assign to expression here");
+}
+
+TEST(ParserTest, InvalidRhsOfAssignment) {
+    std::string diag = parse_and_capture_diag("a = )");
+    EXPECT_EQ(diag, "error: 1:5-1: expected expression");
+}
+
+TEST(ParserTest, InvalidRhsOfMultiplication) {
+    std::string diag = parse_and_capture_diag("a * 4 / /");
+    EXPECT_EQ(diag, "error: 1:9-1: expected expression");
+}
+
+TEST(ParserTest, GoldenFiles) {
+    for (const auto & entry : std::filesystem::directory_iterator("parser")) {
+        std::filesystem::path path = entry.path();
+        if (path.extension() == ".ntx") {
+            Source src = source_from_file(path.c_str());
+            Arena arena = arena_init();
+            Stmt *stmt = parse_file(&arena, &src, diag_default_handler, nullptr);
+            StringBuilder sb = sb_init();
+            ast_dump(&sb, stmt);
+            Source expected = source_from_file(path.replace_extension("out").c_str());
+            if (expected.start) {
+                EXPECT_STREQ(sb.str, expected.start);
+                source_free(&expected);
+            } else {
+                std::ofstream out(path.replace_extension("out"));
+                out << sb.str;
+                out.close();
+            }
+            sb_free(&sb);
+            arena_free(&arena);
+            source_free(&src);
+        }
+    }
 }

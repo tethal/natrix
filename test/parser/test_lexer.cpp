@@ -80,9 +80,9 @@ TEST(LexerTest, SymbolsWithCommentOnNextLine) {
 
 TEST(LexerTest, SimpleExpression) {
     Lexer lexer;
-    lexer_init(&lexer, "(4 + 10) * 3\n");
+    lexer_init(&lexer, "(_x2 + 10) * 3\n");
     EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_LPAREN, "("}));
-    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_INT_LITERAL, "4"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "_x2"}));
     EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_PLUS, "+"}));
     EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_INT_LITERAL, "10"}));
     EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_RPAREN, ")"}));
@@ -134,7 +134,7 @@ TEST(LexerTest, DedentError) {
     EXPECT_STREQ(lexer_error_message(&lexer), "unindent does not match any outer indentation level");
 }
 
-TEST(LexerTest, IndentTooDeppError) {
+TEST(LexerTest, IndentTooDeepError) {
     Source src = source_from_file("test_indent_too_deep.ntx");
     ASSERT_NE(src.start, nullptr);
     Lexer lexer;

@@ -27,8 +27,9 @@ extern "C" {
  * \brief Determines the concrete kind of an expression node.
  */
 typedef enum {
-    EXPR_BINARY,            //!< Binary operation
     EXPR_INT_LITERAL,       //!< Integer literal
+    EXPR_NAME,              //!< Identifier
+    EXPR_BINARY,            //!< Binary operation
 } ExprKind;
 
 /**
@@ -36,6 +37,7 @@ typedef enum {
  */
 typedef enum {
     STMT_EXPR,              //!< Expression statement, e.g. function call
+    STMT_ASSIGNMENT,        //!< Assignment statement
 } StmtKind;
 
 /**
@@ -61,6 +63,14 @@ typedef struct {
 } ExprLiteral;
 
 /**
+ * \brief Attributes of the `EXPR_Name` AST node.
+ */
+typedef struct {
+    const char *start;              //!< Pointer to the start of the identifier in the source code
+    const char *end;                //!< Pointer to the character after the end of the identifier
+} ExprName;
+
+/**
  * \brief Attributes of the `EXPR_BINARY` AST node.
  */
 typedef struct {
@@ -79,9 +89,18 @@ struct Expr {
      */
     union {
         ExprLiteral literal;        //!< Value of a literal, active when `kind` is `EXPR_INT_LITERAL`
+        ExprName identifier;        //!< Identifier, active when `kind` is `EXPR_NAME`
         ExprBinary binary;          //!< Binary operation, active when `kind` is `EXPR_BINARY`
     };
 };
+
+/**
+ * \brief AST node representing an assignment statement.
+ */
+typedef struct {
+    Expr *left;                     //!< Left-hand side of the assignment
+    Expr *right;                    //!< Right-hand side of the assignment
+} StmtAssignment;
 
 /**
  * \brief AST node representing a statement.
@@ -94,6 +113,7 @@ struct Stmt {
      */
     union {
         Expr *expr;                 //!< Expression statement, active when `kind` is `STMT_EXPR`
+        StmtAssignment assignment;  //!< Assignment statement, active when `kind` is `STMT_ASSIGNMENT`
     };
 };
 
@@ -105,6 +125,15 @@ struct Stmt {
  * \return the newly allocated node
  */
 Expr *ast_create_expr_int_literal(Arena *arena, const char *start, const char *end);
+
+/**
+ * \brief Creates a new node representing a name.
+ * \param arena arena allocator from which the node will be allocated
+ * \param start pointer to the start of the identifier in the source code
+ * \param end pointer to the character after the end of the identifier
+ * \return the newly allocated node
+ */
+Expr *ast_create_expr_name(Arena *arena, const char *start, const char *end);
 
 /**
  * \brief Creates a new node representing a binary operation.
@@ -123,6 +152,29 @@ Expr *ast_create_expr_binary(Arena *arena, Expr *left, BinaryOp op, Expr *right)
  * \return the newly allocated node
  */
 Stmt *ast_create_stmt_expr(Arena *arena, Expr *expr);
+
+/**
+ * \brief Creates a new node representing an assignment statement.
+ * \param arena arena allocator from which the node will be allocated
+ * \param left the left-hand side of the assignment
+ * \param right the right-hand side of the assignment
+ * \return the newly allocated node
+ */
+Stmt *ast_create_stmt_assignment(Arena *arena, Expr *left, Expr *right);
+
+/**
+ * \brief Returns the start position of the given expression node in the source code.
+ * \param expr the expression node
+ * \return pointer to the start of the expression in the source code
+ */
+const char *ast_get_expr_start(const Expr *expr);
+
+/**
+ * \brief Returns the end position of the given expression node in the source code.
+ * \param expr the expression node
+ * \return pointer to the character after the end of the expression in the source code
+ */
+const char *ast_get_expr_end(const Expr *expr);
 
 /**
  * \brief Dumps the AST tree to a string builder.

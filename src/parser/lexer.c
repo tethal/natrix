@@ -137,6 +137,12 @@ static TokenType parse_token(Lexer *lexer) {
         }
         return TOKEN_INT_LITERAL;
     }
+    if (isalpha(*lexer->current) || *lexer->current == '_') {
+        while (isalnum(*lexer->current) || *lexer->current == '_') {
+            lexer->current++;
+        }
+        return TOKEN_IDENTIFIER;
+    }
     switch (*lexer->current++) {
         case '\0':
             // rewind the current pointer so that the EOF token is returned on subsequent calls
@@ -156,6 +162,8 @@ static TokenType parse_token(Lexer *lexer) {
             return TOKEN_LPAREN;
         case ')':
             return TOKEN_RPAREN;
+        case '=':
+            return TOKEN_EQUALS;
         default:
             lexer->error_message = "unexpected character";
             return TOKEN_ERROR;
