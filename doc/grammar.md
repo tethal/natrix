@@ -7,13 +7,19 @@ file: statements EOF
 
 ### Statements
 ```
+block: NEWLINE INDENT statements DEDENT
+
 statements: 
     statement
     | statement statements
 
-statement: simple_statement NEWLINE
+statement:
+    KW_WHILE expression COLON block
+    | simple_statement NEWLINE
+
 simple_statement: 
-    expression EQUALS expression
+    KW_PRINT LPAREN expression RPAREN
+    | expression EQUALS expression
     | expression
 ```
 

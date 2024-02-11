@@ -21,6 +21,11 @@ TT(SLASH)         // /
 TT(LPAREN)        // (
 TT(RPAREN)        // )
 TT(EQUALS)        // =
+TT(COLON)         // :
 
 // literals
 TT(INT_LITERAL)   // [0-9]+
+
+// keywords
+TT(KW_PRINT)      // print
+TT(KW_WHILE)      // while

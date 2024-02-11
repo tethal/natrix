@@ -38,6 +38,8 @@ typedef enum {
 typedef enum {
     STMT_EXPR,              //!< Expression statement, e.g. function call
     STMT_ASSIGNMENT,        //!< Assignment statement
+    STMT_WHILE,             //!< While loop
+    STMT_PRINT,             //!< Print statement, to be removed once function calls and built-ins are implemented
 } StmtKind;
 
 /**
@@ -103,6 +105,14 @@ typedef struct {
 } StmtAssignment;
 
 /**
+ * \brief AST node representing a `while` statement.
+ */
+typedef struct {
+    Expr *condition;                //!< Condition of the loop
+    Stmt *body;                     //!< Body of the loop
+} StmtWhile;
+
+/**
  * \brief AST node representing a statement.
  */
 struct Stmt {
@@ -112,8 +122,9 @@ struct Stmt {
      * \brief Union of all possible kinds of statement nodes.
      */
     union {
-        Expr *expr;                 //!< Expression statement, active when `kind` is `STMT_EXPR`
+        Expr *expr;                 //!< Expression statement, active when `kind` is `STMT_EXPR` or `STMT_PRINT`
         StmtAssignment assignment;  //!< Assignment statement, active when `kind` is `STMT_ASSIGNMENT`
+        StmtWhile while_stmt;       //!< While loop, active when `kind` is `STMT_WHILE`
     };
 };
 
@@ -161,6 +172,23 @@ Stmt *ast_create_stmt_expr(Arena *arena, Expr *expr);
  * \return the newly allocated node
  */
 Stmt *ast_create_stmt_assignment(Arena *arena, Expr *left, Expr *right);
+
+/**
+ * \brief Creates a new node representing a `while` statement.
+ * \param arena arena allocator from which the node will be allocated
+ * \param condition the condition of the loop
+ * \param body the body of the loop
+ * \return the newly allocated node
+ */
+Stmt *ast_create_stmt_while(Arena *arena, Expr *condition, Stmt *body);
+
+/**
+ * \brief Creates a new node representing a `print` statement.
+ * \param arena arena allocator from which the node will be allocated
+ * \param expr expression to be printed
+ * \return the newly allocated node
+ */
+Stmt *ast_create_stmt_print(Arena *arena, Expr *expr);
 
 /**
  * \brief Returns the start position of the given expression node in the source code.

@@ -142,16 +142,8 @@ static int64_t eval_binop(int64_t left, BinaryOp op, int64_t right) {
  */
 static int64_t eval_expr(Env *env, const Expr *expr) {
     switch (expr->kind) {
-        case EXPR_INT_LITERAL: {
-            int64_t value = 0;
-            for (const char *ptr = expr->literal.start; ptr < expr->literal.end; ptr++) {
-                value = value * 10 + (*ptr - '0');
-                if (value < 0) {
-                    PANIC("Integer literal too large");
-                }
-            }
-            return value;
-        }
+        case EXPR_INT_LITERAL:
+            return int_from_str(expr->literal.start, expr->literal.end - expr->literal.start);
         case EXPR_NAME:
             return env_get(env, expr->identifier.start, expr->identifier.end - expr->identifier.start);
         case EXPR_BINARY:
@@ -161,6 +153,8 @@ static int64_t eval_expr(Env *env, const Expr *expr) {
     }
 }
 
+static void exec_stmts(Env *env, const Stmt *stmt);
+
 /**
  * \brief Executes the given statement.
  * \param env the environment for variable lookup
@@ -169,7 +163,7 @@ static int64_t eval_expr(Env *env, const Expr *expr) {
 static void exec_stmt(Env *env, const Stmt *stmt) {
     switch (stmt->kind) {
         case STMT_EXPR:
-            printf("%ld\n", eval_expr(env, stmt->expr));
+            eval_expr(env, stmt->expr);
             break;
         case STMT_ASSIGNMENT: {
             assert(stmt->assignment.left->kind == EXPR_NAME);
@@ -179,8 +173,28 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
             env_set(env, start, end - start, rhs);
             break;
         }
+        case STMT_WHILE:
+            while (eval_expr(env, stmt->while_stmt.condition)) {
+                exec_stmts(env, stmt->while_stmt.body);
+            }
+            break;
+        case STMT_PRINT:
+            printf("%ld\n", eval_expr(env, stmt->expr));
+            break;
         default:
             assert(0);
+    }
+}
+
+/**
+ * \brief Executes the given list of statements.
+ * \param env the environment for variable lookup
+ * \param stmt the first statement in the list
+ */
+static void exec_stmts(Env *env, const Stmt *stmt) {
+    while (stmt) {
+        exec_stmt(env, stmt);
+        stmt = stmt->next;
     }
 }
 
@@ -196,10 +210,7 @@ static void run(Source *source, int64_t arg) {
     };
     Stmt *stmt = parse_file(&env.arena, source, diag_default_handler, NULL);
     env_set(&env, "arg", 3, arg);
-    while (stmt) {
-        exec_stmt(&env, stmt);
-        stmt = stmt->next;
-    }
+    exec_stmts(&env, stmt);
     arena_free(&env.arena);
 }
 

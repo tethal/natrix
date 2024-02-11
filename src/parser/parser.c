@@ -72,6 +72,7 @@ static bool match(Parser *parser, TokenType type, const char *message) {
 }
 
 static Expr *expression(Parser *parser);
+static Stmt *block(Parser *parser);
 
 /**
  * \code
@@ -150,11 +151,22 @@ static Expr *expression(Parser *parser) {
 /**
  * \code
  * simple_statement:
- *     expression EQUALS expression NEWLINE
- *     | expression NEWLINE
+ *     KW_PRINT LPAREN expression RPAREN
+ *     | expression EQUALS expression
+ *     | expression
  * \endcode
  */
 static Stmt *simple_statement(Parser *parser) {
+    if (parser->current.type == TOKEN_KW_PRINT) {
+        consume(parser);
+        if (match(parser, TOKEN_LPAREN, "expected '('")) {
+            Expr *expr = expression(parser);
+            if (expr && match(parser, TOKEN_RPAREN, "expected ')'")) {
+                return ast_create_stmt_print(parser->arena, expr);
+            }
+        }
+        return NULL;
+    }
     Expr *expr = expression(parser);
     if (!expr) {
         return NULL;
@@ -174,22 +186,37 @@ static Stmt *simple_statement(Parser *parser) {
 
 /**
  * \code
- * statement: simple_statement NEWLINE
+ * statement:
+ *     KW_WHILE expression COLON block
+ *     | simple_statement NEWLINE
  * \endcode
  */
 static Stmt *statement(Parser *parser) {
-    Stmt *stmt = simple_statement(parser);
-    if (stmt && match(parser, TOKEN_NEWLINE, "expected end of line")) {
-        return stmt;
+    switch (parser->current.type) {
+        case TOKEN_KW_WHILE: {
+            consume(parser);
+            Expr *cond = expression(parser);
+            if (cond && match(parser, TOKEN_COLON, "expected ':'")) {
+                Stmt *body = block(parser);
+                return body ? ast_create_stmt_while(parser->arena, cond, body) : NULL;
+            }
+            return NULL;
+        }
+        default: {
+            Stmt *stmt = simple_statement(parser);
+            if (stmt && match(parser, TOKEN_NEWLINE, "expected end of line")) {
+                return stmt;
+            }
+            return NULL;
+        }
     }
-    return NULL;
 }
 
 /**
  * \code
  * statements:
- *    statement
- *    | statement statements
+ *     statement
+ *     | statement statements
  * \endcode
  */
 static Stmt *statements(Parser *parser, TokenType sentinel) {
@@ -200,6 +227,26 @@ static Stmt *statements(Parser *parser, TokenType sentinel) {
         last = last->next;
     }
     return last ? result : NULL;
+}
+
+/**
+ * \code
+ * block: NEWLINE INDENT statements DEDENT
+ * \endcode
+ */
+static Stmt *block(Parser *parser) {
+    if (!match(parser, TOKEN_NEWLINE, "newline expected")) {
+        return NULL;
+    }
+    if (!match(parser, TOKEN_INDENT, "indent expected")) {
+        return NULL;
+    }
+    Stmt *result = statements(parser, TOKEN_DEDENT);
+    if (result) {
+        assert(parser->current.type == TOKEN_DEDENT);
+        consume(parser);
+    }
+    return result;
 }
 
 Stmt *parse_file(Arena *arena, Source *source, DiagHandler diag_handler, void *diag_data) {

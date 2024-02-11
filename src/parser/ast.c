@@ -71,6 +71,25 @@ Stmt *ast_create_stmt_expr(Arena *arena, Expr *expr) {
     return stmt;
 }
 
+Stmt *ast_create_stmt_while(Arena *arena, Expr *condition, Stmt *body) {
+    assert(condition != NULL && body != NULL);
+    Stmt *stmt = arena_alloc(arena, sizeof(Stmt));
+    stmt->kind = STMT_WHILE;
+    stmt->next = NULL;
+    stmt->while_stmt.condition = condition;
+    stmt->while_stmt.body = body;
+    return stmt;
+}
+
+Stmt *ast_create_stmt_print(Arena *arena, Expr *expr) {
+    assert(expr != NULL);
+    Stmt *stmt = arena_alloc(arena, sizeof(Stmt));
+    stmt->kind = STMT_PRINT;
+    stmt->next = NULL;
+    stmt->expr = expr;
+    return stmt;
+}
+
 const char *ast_get_expr_start(const Expr *expr) {
     switch (expr->kind) {
         case EXPR_INT_LITERAL:
@@ -127,6 +146,8 @@ static void ast_dump_expr(StringBuilder *sb, const Expr *expr, int indent, const
     }
 }
 
+static void ast_dump_stmts(StringBuilder *sb, const Stmt *stmt, int indent, const char *label);
+
 /**
  * \brief Dumps the given statement to the given string builder.
  * \param sb the string builder
@@ -138,22 +159,45 @@ static void ast_dump_stmt(StringBuilder *sb, const Stmt *stmt, int indent) {
     switch (stmt->kind) {
         case STMT_EXPR:
             sb_append_str(sb, "STMT_EXPR\n");
-            ast_dump_expr(sb, stmt->expr, indent + 2, NULL);
+            ast_dump_expr(sb, stmt->expr, indent + 2, "expr");
             break;
         case STMT_ASSIGNMENT:
             sb_append_str(sb, "STMT_ASSIGNMENT\n");
             ast_dump_expr(sb, stmt->assignment.left, indent + 2, "left");
             ast_dump_expr(sb, stmt->assignment.right, indent + 2, "right");
             break;
+        case STMT_WHILE:
+            sb_append_str(sb, "STMT_WHILE\n");
+            ast_dump_expr(sb, stmt->while_stmt.condition, indent + 2, "condition");
+            ast_dump_stmts(sb, stmt->while_stmt.body, indent + 2, "body");
+            break;
+        case STMT_PRINT:
+            sb_append_str(sb, "STMT_PRINT\n");
+            ast_dump_expr(sb, stmt->expr, indent + 2, "expr");
+            break;
         default:
             assert(0 && "Invalid StmtKind");
     }
 }
 
-void ast_dump(StringBuilder *sb, const Stmt *stmt) {
-    sb_append_str(sb, "AST dump:\n");
+/**
+ * \brief Dumps the given list of statements to the given string builder.
+ * \param sb the string builder
+ * \param stmt the list of statements to dump
+ * \param indent the indentation level
+ * \param label the label to print before the list of statements
+ */
+static void ast_dump_stmts(StringBuilder *sb, const Stmt *stmt, int indent, const char *label) {
+    sb_append_formatted(sb, "%*s", indent, "");
+    if (label) {
+        sb_append_formatted(sb, "%s:\n", label);
+    }
     while (stmt) {
-        ast_dump_stmt(sb, stmt, 2);
+        ast_dump_stmt(sb, stmt, indent + 2);
         stmt = stmt->next;
     }
+}
+
+void ast_dump(StringBuilder *sb, const Stmt *stmt) {
+    ast_dump_stmts(sb, stmt, 0, "AST dump");
 }

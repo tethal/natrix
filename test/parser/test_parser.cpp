@@ -76,6 +76,41 @@ TEST(ParserTest, InvalidRhsOfMultiplication) {
     EXPECT_EQ(diag, "error: 1:9-1: expected expression");
 }
 
+TEST(ParserTest, BlockNoNL) {
+    std::string diag = parse_and_capture_diag("while a: 1");
+    EXPECT_EQ(diag, "error: 1:10-1: newline expected");
+}
+
+TEST(ParserTest, BlockNoIndent) {
+    std::string diag = parse_and_capture_diag("while a:\n1");
+    EXPECT_EQ(diag, "error: 2:1-1: indent expected");
+}
+
+TEST(ParserTest, BlockErrBody) {
+    std::string diag = parse_and_capture_diag("while a:\n  print");
+    EXPECT_EQ(diag, "error: 2:8-1: expected '('");
+}
+
+TEST(ParserTest, WhileNoCond) {
+    std::string diag = parse_and_capture_diag("while:\n  print(1)");
+    EXPECT_EQ(diag, "error: 1:6-1: expected expression");
+}
+
+TEST(ParserTest, WhileNoColon) {
+    std::string diag = parse_and_capture_diag("while 1\n  print(1)");
+    EXPECT_EQ(diag, "error: 1:8-1: expected ':'");
+}
+
+TEST(ParserTest, PrintNoRParen) {
+    std::string diag = parse_and_capture_diag("print(1");
+    EXPECT_EQ(diag, "error: 1:8-1: expected ')'");
+}
+
+TEST(ParserTest, PrintNoExpr) {
+    std::string diag = parse_and_capture_diag("print()");
+    EXPECT_EQ(diag, "error: 1:7-1: expected expression");
+}
+
 TEST(ParserTest, GoldenFiles) {
     for (const auto & entry : std::filesystem::directory_iterator("parser")) {
         std::filesystem::path path = entry.path();
@@ -87,7 +122,7 @@ TEST(ParserTest, GoldenFiles) {
             ast_dump(&sb, stmt);
             Source expected = source_from_file(path.replace_extension("out").c_str());
             if (expected.start) {
-                EXPECT_STREQ(sb.str, expected.start);
+                EXPECT_STREQ(expected.start, sb.str);
                 source_free(&expected);
             } else {
                 std::ofstream out(path.replace_extension("out"));

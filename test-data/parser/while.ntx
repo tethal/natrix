@@ -1,0 +1,8 @@
+sum = 0
+while n:
+    sum = sum + n
+    n = n - 1
+print(sum)
+
+while 1:        # implicit DEDENT at EOF
+    print(42)

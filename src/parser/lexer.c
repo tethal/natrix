@@ -106,6 +106,39 @@ static TokenType handle_indentation_change(Lexer *lexer, size_t indent) {
 }
 
 /**
+ * \brief Compares the given keyword with the token and returns the appropriate token type.
+ * \param ptr pointer to the start of the token
+ * \param end pointer to the end of the token
+ * \param keyword the keyword to compare
+ * \param type the type of the token if the keyword matches
+ * \return the type of the token, either `type` or `TOKEN_IDENTIFIER`
+ */
+static TokenType check_keyword(const char *ptr, const char *end, const char *keyword, TokenType type) {
+    while (ptr < end && *keyword != '\0' && *ptr == *keyword) {
+        ptr++;
+        keyword++;
+    }
+    return ptr == end && *keyword == '\0' ? type : TOKEN_IDENTIFIER;
+}
+
+/**
+ * \brief Determines whether the identifier is a keyword and returns the appropriate token type.
+ * \param start pointer to the start of the token
+ * \param end pointer to the end of the token
+ * \return the type of the token
+ */
+static TokenType handle_identifier(const char *start, const char *end) {
+    assert(start < end);
+    switch (*start) {
+        case 'p':
+            return check_keyword(start, end, "print", TOKEN_KW_PRINT);
+        case 'w':
+            return check_keyword(start, end, "while", TOKEN_KW_WHILE);
+    }
+    return TOKEN_IDENTIFIER;
+}
+
+/**
  * \brief Parses the next token from the source code.
  *
  * This function is called after the lexer has reported any pending dedents.
@@ -141,7 +174,7 @@ static TokenType parse_token(Lexer *lexer) {
         while (isalnum(*lexer->current) || *lexer->current == '_') {
             lexer->current++;
         }
-        return TOKEN_IDENTIFIER;
+        return handle_identifier(lexer->start, lexer->current);
     }
     switch (*lexer->current++) {
         case '\0':
@@ -164,6 +197,8 @@ static TokenType parse_token(Lexer *lexer) {
             return TOKEN_RPAREN;
         case '=':
             return TOKEN_EQUALS;
+        case ':':
+            return TOKEN_COLON;
         default:
             lexer->error_message = "unexpected character";
             return TOKEN_ERROR;

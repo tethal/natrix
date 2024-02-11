@@ -1,12 +1,28 @@
 # Sample natrix source code
 
-# Currently, natrix programs are sequences of assignments and simple expressions, one per line, with no leading whitespaces
 # See doc/grammar.md
+# Variable `arg` contains the integer value of the first command line argument, or 0 if there are no arguments
 
-# Assignments are evaluated, but their results are not printed
-# Expressions are evaluated and their results are printed to the standard output
-# Variable `arg` contains the value of the first command line argument, or 0 if there are no arguments
+sum = 0
+n = arg
+while n:
+    sum = sum + n
+    n = n - 1
+print(sum)          # Prints the triangular number of the first command line argument
 
-a = 17 - arg
-b = (arg + 1) * 50
-b / 2 + a
+fact = 1
+n = arg
+while n:
+    fact = fact * n
+    n = n - 1
+print(fact)         # Prints the factorial of the first command line argument
+
+a = 0
+b = 1
+n = arg
+while n:
+    t = a + b
+    a = b
+    b = t
+    n = n - 1
+print(a)            # Prints the nth Fibonacci number

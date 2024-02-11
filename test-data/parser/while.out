@@ -1,0 +1,24 @@
+AST dump:
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "sum"}
+    right: EXPR_INT_LITERAL {literal: "0"}
+  STMT_WHILE
+    condition: EXPR_NAME {identifier: "n"}
+    body:
+      STMT_ASSIGNMENT
+        left: EXPR_NAME {identifier: "sum"}
+        right: EXPR_BINARY {op: ADD}
+          left: EXPR_NAME {identifier: "sum"}
+          right: EXPR_NAME {identifier: "n"}
+      STMT_ASSIGNMENT
+        left: EXPR_NAME {identifier: "n"}
+        right: EXPR_BINARY {op: SUB}
+          left: EXPR_NAME {identifier: "n"}
+          right: EXPR_INT_LITERAL {literal: "1"}
+  STMT_PRINT
+    expr: EXPR_NAME {identifier: "sum"}
+  STMT_WHILE
+    condition: EXPR_INT_LITERAL {literal: "1"}
+    body:
+      STMT_PRINT
+        expr: EXPR_INT_LITERAL {literal: "42"}
