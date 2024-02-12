@@ -1,0 +1,30 @@
+if 1:
+    pass
+
+if 2:
+    a
+else:
+    b
+
+if 3:
+    a
+elif 4:
+    b
+
+if 5:
+    a
+elif 6:
+    b
+else:
+    c
+
+if 10:
+    if 11:
+        a
+    else:
+        b
+else:
+    if 12:
+        c
+    else:
+        d

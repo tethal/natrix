@@ -111,6 +111,31 @@ TEST(ParserTest, PrintNoExpr) {
     EXPECT_EQ(diag, "error: 1:7-1: expected expression");
 }
 
+TEST(ParserTest, ElseNoColon) {
+    std::string diag = parse_and_capture_diag("if a:\n  print(1)\nelse\n  print(2)");
+    EXPECT_EQ(diag, "error: 3:5-1: expected ':'");
+}
+
+TEST(ParserTest, ElseNoIndent) {
+    std::string diag = parse_and_capture_diag("if a:\n  print(1)\nelse:\nprint(2)");
+    EXPECT_EQ(diag, "error: 4:1-5: indent expected");
+}
+
+TEST(ParserTest, ElifNoCond) {
+    std::string diag = parse_and_capture_diag("if a:\n  print(1)\nelif:\n  print(2)");
+    EXPECT_EQ(diag, "error: 3:5-1: expected expression");
+}
+
+TEST(ParserTest, ElifNoColon) {
+    std::string diag = parse_and_capture_diag("if a:\n  print(1)\nelif b\n  print(2)");
+    EXPECT_EQ(diag, "error: 3:7-1: expected ':'");
+}
+
+TEST(ParserTest, ElifNoIndent) {
+    std::string diag = parse_and_capture_diag("if a:\n  print(1)\nelif b:\nprint(2)");
+    EXPECT_EQ(diag, "error: 4:1-5: indent expected");
+}
+
 TEST(ParserTest, GoldenFiles) {
     for (const auto & entry : std::filesystem::directory_iterator("parser")) {
         std::filesystem::path path = entry.path();

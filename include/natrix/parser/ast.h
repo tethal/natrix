@@ -39,6 +39,8 @@ typedef enum {
     STMT_EXPR,              //!< Expression statement, e.g. function call
     STMT_ASSIGNMENT,        //!< Assignment statement
     STMT_WHILE,             //!< While loop
+    STMT_IF,                //!< If statement
+    STMT_PASS,              //!< Empty statement
     STMT_PRINT,             //!< Print statement, to be removed once function calls and built-ins are implemented
 } StmtKind;
 
@@ -113,6 +115,15 @@ typedef struct {
 } StmtWhile;
 
 /**
+ * \brief AST node representing an `if` statement.
+ */
+typedef struct {
+    Expr *condition;                //!< Condition of the `if` statement
+    Stmt *then_body;                //!< True branch of the `if` statement
+    Stmt *else_body;                //!< False branch of the `if` statement
+} StmtIf;
+
+/**
  * \brief AST node representing a statement.
  */
 struct Stmt {
@@ -125,6 +136,7 @@ struct Stmt {
         Expr *expr;                 //!< Expression statement, active when `kind` is `STMT_EXPR` or `STMT_PRINT`
         StmtAssignment assignment;  //!< Assignment statement, active when `kind` is `STMT_ASSIGNMENT`
         StmtWhile while_stmt;       //!< While loop, active when `kind` is `STMT_WHILE`
+        StmtIf if_stmt;             //!< If statement, active when `kind` is `STMT_IF`
     };
 };
 
@@ -181,6 +193,23 @@ Stmt *ast_create_stmt_assignment(Arena *arena, Expr *left, Expr *right);
  * \return the newly allocated node
  */
 Stmt *ast_create_stmt_while(Arena *arena, Expr *condition, Stmt *body);
+
+/**
+ * \brief Creates a new node representing an `if` statement.
+ * \param arena arena allocator from which the node will be allocated
+ * \param condition the condition of the `if` statement
+ * \param then_body the true branch of the `if` statement
+ * \param else_body the false branch of the `if` statement, use `STMT_PASS` if there is no `else` branch
+ * \return the newly allocated node
+ */
+Stmt *ast_create_stmt_if(Arena *arena, Expr *condition, Stmt *then_body, Stmt *else_body);
+
+/**
+ * \brief Creates a new node representing an empty statement.
+ * \param arena arena allocator from which the node will be allocated
+ * \return the newly allocated node
+ */
+Stmt *ast_create_stmt_pass(Arena *arena);
 
 /**
  * \brief Creates a new node representing a `print` statement.

@@ -3,6 +3,11 @@
 # See doc/grammar.md
 # Variable `arg` contains the integer value of the first command line argument, or 0 if there are no arguments
 
+if arg:
+    print(1)
+else:
+    print(0)
+
 sum = 0
 n = arg
 while n:

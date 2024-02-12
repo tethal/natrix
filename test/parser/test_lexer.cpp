@@ -149,3 +149,22 @@ TEST(LexerTest, IndentTooDeepError) {
     EXPECT_STREQ(lexer_error_message(&lexer), "too many indentation levels");
     source_free(&src);
 }
+
+TEST(LexerTest, Keywords) {
+    Lexer lexer;
+    lexer_init(&lexer, "i if ifi e el els else elsew eli elif elif1\n");
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "i"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_KW_IF, "if"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "ifi"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "e"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "el"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "els"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_KW_ELSE, "else"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "elsew"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "eli"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_KW_ELIF, "elif"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_IDENTIFIER, "elif1"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_NEWLINE, "\n"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_EOF, ""}));
+    EXPECT_EQ(lexer_error_message(&lexer), nullptr);
+}

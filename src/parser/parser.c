@@ -152,6 +152,7 @@ static Expr *expression(Parser *parser) {
  * \code
  * simple_statement:
  *     KW_PRINT LPAREN expression RPAREN
+ *     | KW_PASS
  *     | expression EQUALS expression
  *     | expression
  * \endcode
@@ -166,6 +167,10 @@ static Stmt *simple_statement(Parser *parser) {
             }
         }
         return NULL;
+    }
+    if (parser->current.type == TOKEN_KW_PASS) {
+        consume(parser);
+        return ast_create_stmt_pass(parser->arena);
     }
     Expr *expr = expression(parser);
     if (!expr) {
@@ -186,8 +191,56 @@ static Stmt *simple_statement(Parser *parser) {
 
 /**
  * \code
+ * else_block: KW_ELSE COLON block
+ * \endcode
+ */
+static Stmt *else_block(Parser *parser) {
+    assert(parser->current.type == TOKEN_KW_ELSE);
+    consume(parser);
+    if (!match(parser, TOKEN_COLON, "expected ':'")) {
+        return NULL;
+    }
+    return block(parser);
+}
+
+/**
+ * \code
+ * elif_block:
+ *     KW_ELIF expression COLON block
+ *     | KW_ELIF expression COLON block else_block
+ *     | KW_ELIF expression COLON block elif_block
+ * \endcode
+ * \note This function is also used to parse the `if` statement, only the keyword is different.
+ */
+static Stmt *elif_block(Parser *parser) {
+    assert(parser->current.type == TOKEN_KW_ELIF || parser->current.type == TOKEN_KW_IF);
+    consume(parser);
+    Expr *cond = expression(parser);
+    if (!(cond && match(parser, TOKEN_COLON, "expected ':'"))) {
+        return NULL;
+    }
+    Stmt *then_body = block(parser);
+    if (!then_body) {
+        return NULL;
+    }
+    Stmt *else_body;
+    if (parser->current.type == TOKEN_KW_ELSE) {
+        else_body = else_block(parser);
+    } else if (parser->current.type == TOKEN_KW_ELIF) {
+        else_body = elif_block(parser);
+    } else {
+        else_body = ast_create_stmt_pass(parser->arena);
+    }
+    return else_body ? ast_create_stmt_if(parser->arena, cond, then_body, else_body) : NULL;
+}
+
+/**
+ * \code
  * statement:
  *     KW_WHILE expression COLON block
+ *     | KW_IF expression COLON block
+ *     | KW_IF expression COLON block else_block
+ *     | KW_IF expression COLON block elif_block
  *     | simple_statement NEWLINE
  * \endcode
  */
@@ -196,12 +249,15 @@ static Stmt *statement(Parser *parser) {
         case TOKEN_KW_WHILE: {
             consume(parser);
             Expr *cond = expression(parser);
-            if (cond && match(parser, TOKEN_COLON, "expected ':'")) {
-                Stmt *body = block(parser);
-                return body ? ast_create_stmt_while(parser->arena, cond, body) : NULL;
+            if (!(cond && match(parser, TOKEN_COLON, "expected ':'"))) {
+                return NULL;
             }
-            return NULL;
+            Stmt *body = block(parser);
+            return body ? ast_create_stmt_while(parser->arena, cond, body) : NULL;
         }
+        case TOKEN_KW_IF:
+            // `if` differs from `elif` only in the keyword, we can use the same function to parse both
+            return elif_block(parser);
         default: {
             Stmt *stmt = simple_statement(parser);
             if (stmt && match(parser, TOKEN_NEWLINE, "expected end of line")) {

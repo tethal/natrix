@@ -81,6 +81,24 @@ Stmt *ast_create_stmt_while(Arena *arena, Expr *condition, Stmt *body) {
     return stmt;
 }
 
+Stmt *ast_create_stmt_if(Arena *arena, Expr *condition, Stmt *then_body, Stmt *else_body) {
+    assert(condition != NULL && then_body != NULL && else_body != NULL);
+    Stmt *stmt = arena_alloc(arena, sizeof(Stmt));
+    stmt->kind = STMT_IF;
+    stmt->next = NULL;
+    stmt->if_stmt.condition = condition;
+    stmt->if_stmt.then_body = then_body;
+    stmt->if_stmt.else_body = else_body;
+    return stmt;
+}
+
+Stmt *ast_create_stmt_pass(Arena *arena) {
+    Stmt *stmt = arena_alloc(arena, sizeof(Stmt));
+    stmt->kind = STMT_PASS;
+    stmt->next = NULL;
+    return stmt;
+}
+
 Stmt *ast_create_stmt_print(Arena *arena, Expr *expr) {
     assert(expr != NULL);
     Stmt *stmt = arena_alloc(arena, sizeof(Stmt));
@@ -170,6 +188,15 @@ static void ast_dump_stmt(StringBuilder *sb, const Stmt *stmt, int indent) {
             sb_append_str(sb, "STMT_WHILE\n");
             ast_dump_expr(sb, stmt->while_stmt.condition, indent + 2, "condition");
             ast_dump_stmts(sb, stmt->while_stmt.body, indent + 2, "body");
+            break;
+        case STMT_IF:
+            sb_append_str(sb, "STMT_IF\n");
+            ast_dump_expr(sb, stmt->if_stmt.condition, indent + 2, "condition");
+            ast_dump_stmts(sb, stmt->if_stmt.then_body, indent + 2, "then_body");
+            ast_dump_stmts(sb, stmt->if_stmt.else_body, indent + 2, "else_body");
+            break;
+        case STMT_PASS:
+            sb_append_str(sb, "STMT_PASS\n");
             break;
         case STMT_PRINT:
             sb_append_str(sb, "STMT_PRINT\n");

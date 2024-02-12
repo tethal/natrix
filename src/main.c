@@ -178,6 +178,15 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
                 exec_stmts(env, stmt->while_stmt.body);
             }
             break;
+        case STMT_IF:
+            if (eval_expr(env, stmt->if_stmt.condition)) {
+                exec_stmts(env, stmt->if_stmt.then_body);
+            } else if (stmt->if_stmt.else_body) {
+                exec_stmts(env, stmt->if_stmt.else_body);
+            }
+            break;
+        case STMT_PASS:
+            break;
         case STMT_PRINT:
             printf("%ld\n", eval_expr(env, stmt->expr));
             break;

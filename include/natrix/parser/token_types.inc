@@ -27,5 +27,9 @@ TT(COLON)         // :
 TT(INT_LITERAL)   // [0-9]+
 
 // keywords
+TT(KW_ELIF)       // elif
+TT(KW_ELSE)       // else
+TT(KW_IF)         // if
+TT(KW_PASS)       // pass
 TT(KW_PRINT)      // print
 TT(KW_WHILE)      // while

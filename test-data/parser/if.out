@@ -1,0 +1,62 @@
+AST dump:
+  STMT_IF
+    condition: EXPR_INT_LITERAL {literal: "1"}
+    then_body:
+      STMT_PASS
+    else_body:
+      STMT_PASS
+  STMT_IF
+    condition: EXPR_INT_LITERAL {literal: "2"}
+    then_body:
+      STMT_EXPR
+        expr: EXPR_NAME {identifier: "a"}
+    else_body:
+      STMT_EXPR
+        expr: EXPR_NAME {identifier: "b"}
+  STMT_IF
+    condition: EXPR_INT_LITERAL {literal: "3"}
+    then_body:
+      STMT_EXPR
+        expr: EXPR_NAME {identifier: "a"}
+    else_body:
+      STMT_IF
+        condition: EXPR_INT_LITERAL {literal: "4"}
+        then_body:
+          STMT_EXPR
+            expr: EXPR_NAME {identifier: "b"}
+        else_body:
+          STMT_PASS
+  STMT_IF
+    condition: EXPR_INT_LITERAL {literal: "5"}
+    then_body:
+      STMT_EXPR
+        expr: EXPR_NAME {identifier: "a"}
+    else_body:
+      STMT_IF
+        condition: EXPR_INT_LITERAL {literal: "6"}
+        then_body:
+          STMT_EXPR
+            expr: EXPR_NAME {identifier: "b"}
+        else_body:
+          STMT_EXPR
+            expr: EXPR_NAME {identifier: "c"}
+  STMT_IF
+    condition: EXPR_INT_LITERAL {literal: "10"}
+    then_body:
+      STMT_IF
+        condition: EXPR_INT_LITERAL {literal: "11"}
+        then_body:
+          STMT_EXPR
+            expr: EXPR_NAME {identifier: "a"}
+        else_body:
+          STMT_EXPR
+            expr: EXPR_NAME {identifier: "b"}
+    else_body:
+      STMT_IF
+        condition: EXPR_INT_LITERAL {literal: "12"}
+        then_body:
+          STMT_EXPR
+            expr: EXPR_NAME {identifier: "c"}
+        else_body:
+          STMT_EXPR
+            expr: EXPR_NAME {identifier: "d"}

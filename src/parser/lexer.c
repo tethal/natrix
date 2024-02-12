@@ -130,8 +130,28 @@ static TokenType check_keyword(const char *ptr, const char *end, const char *key
 static TokenType handle_identifier(const char *start, const char *end) {
     assert(start < end);
     switch (*start) {
+        case 'e':
+            if (start + 2 < end && start[1] == 'l') {
+                switch (start[2]) {
+                    case 's':
+                        return check_keyword(start, end, "else", TOKEN_KW_ELSE);
+                    case 'i':
+                        return check_keyword(start, end, "elif", TOKEN_KW_ELIF);
+                }
+            }
+            break;
+        case 'i':
+            return check_keyword(start, end, "if", TOKEN_KW_IF);
         case 'p':
-            return check_keyword(start, end, "print", TOKEN_KW_PRINT);
+            if (start + 1 < end) {
+                switch (start[1]) {
+                    case 'a':
+                        return check_keyword(start, end, "pass", TOKEN_KW_PASS);
+                    case 'r':
+                        return check_keyword(start, end, "print", TOKEN_KW_PRINT);
+                }
+            }
+            break;
         case 'w':
             return check_keyword(start, end, "while", TOKEN_KW_WHILE);
     }

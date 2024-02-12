@@ -15,12 +15,23 @@ statements:
 
 statement:
     KW_WHILE expression COLON block
+    | KW_IF expression COLON block
+    | KW_IF expression COLON block else_block
+    | KW_IF expression COLON block elif_block
     | simple_statement NEWLINE
 
 simple_statement: 
     KW_PRINT LPAREN expression RPAREN
+    | KW_PASS
     | expression EQUALS expression
     | expression
+
+ elif_block:
+     KW_ELIF expression COLON block
+     | KW_ELIF expression COLON block else_block
+     | KW_ELIF expression COLON block elif_block
+
+else_block: KW_ELSE COLON block
 ```
 
 ### Expressions
