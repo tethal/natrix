@@ -52,6 +52,12 @@ typedef enum {
     BINOP_SUB,              //!< Subtraction
     BINOP_MUL,              //!< Multiplication
     BINOP_DIV,              //!< Division
+    BINOP_EQ,               //!< Equality
+    BINOP_NE,               //!< Inequality
+    BINOP_LT,               //!< Less than
+    BINOP_LE,               //!< Less than or equal
+    BINOP_GT,               //!< Greater than
+    BINOP_GE,               //!< Greater than or equal
     BINOP_COUNT             //!< Number of binary operators
 } BinaryOp;
 

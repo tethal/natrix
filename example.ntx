@@ -3,31 +3,27 @@
 # See doc/grammar.md
 # Variable `arg` contains the integer value of the first command line argument, or 0 if there are no arguments
 
-if arg:
-    print(1)
+if arg >= 200:
+    sum = 0
+    n = arg - 200
+    while n > 0:
+        sum = sum + n
+        n = n - 1
+    print(sum)          # Prints the triangular number of the first command line argument
+elif arg >= 100:
+    fact = 1
+    n = arg - 100
+    while n > 0:
+        fact = fact * n
+        n = n - 1
+    print(fact)         # Prints the factorial of the first command line argument
 else:
-    print(0)
-
-sum = 0
-n = arg
-while n:
-    sum = sum + n
-    n = n - 1
-print(sum)          # Prints the triangular number of the first command line argument
-
-fact = 1
-n = arg
-while n:
-    fact = fact * n
-    n = n - 1
-print(fact)         # Prints the factorial of the first command line argument
-
-a = 0
-b = 1
-n = arg
-while n:
-    t = a + b
-    a = b
-    b = t
-    n = n - 1
-print(a)            # Prints the nth Fibonacci number
+    a = 0
+    b = 1
+    n = arg
+    while n > 0:
+        t = a + b
+        a = b
+        b = t
+        n = n - 1
+    print(a)            # Prints the nth Fibonacci number

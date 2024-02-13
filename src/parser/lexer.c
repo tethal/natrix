@@ -216,9 +216,32 @@ static TokenType parse_token(Lexer *lexer) {
         case ')':
             return TOKEN_RPAREN;
         case '=':
+            if (*lexer->current == '=') {
+                lexer->current++;
+                return TOKEN_EQ;
+            }
             return TOKEN_EQUALS;
         case ':':
             return TOKEN_COLON;
+        case '!':
+            if (*lexer->current == '=') {
+                lexer->current++;
+                return TOKEN_NE;
+            }
+            lexer->error_message = "invalid syntax";
+            return TOKEN_ERROR;
+        case '<':
+            if (*lexer->current == '=') {
+                lexer->current++;
+                return TOKEN_LE;
+            }
+            return TOKEN_LT;
+        case '>':
+            if (*lexer->current == '=') {
+                lexer->current++;
+                return TOKEN_GE;
+            }
+            return TOKEN_GT;
         default:
             lexer->error_message = "unexpected character";
             return TOKEN_ERROR;

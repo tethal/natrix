@@ -21,6 +21,12 @@ static const char *BINOP_NAMES[] = {
         [BINOP_SUB] = "SUB",
         [BINOP_MUL] = "MUL",
         [BINOP_DIV] = "DIV",
+        [BINOP_EQ] = "EQ",
+        [BINOP_NE] = "NE",
+        [BINOP_LT] = "LT",
+        [BINOP_LE] = "LE",
+        [BINOP_GT] = "GT",
+        [BINOP_GE] = "GE",
 };
 
 Expr *ast_create_expr_int_literal(Arena *arena, const char *start, const char *end) {

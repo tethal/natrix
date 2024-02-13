@@ -168,3 +168,17 @@ TEST(LexerTest, Keywords) {
     EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_EOF, ""}));
     EXPECT_EQ(lexer_error_message(&lexer), nullptr);
 }
+
+TEST(LexerTest, CmpOp) {
+    Lexer lexer;
+    lexer_init(&lexer, "= == != > >= <= < !a\n");
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_EQUALS, "="}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_EQ, "=="}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_NE, "!="}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_GT, ">"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_GE, ">="}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_LE, "<="}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_LT, "<"}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_ERROR, "!"}));
+    EXPECT_STREQ(lexer_error_message(&lexer), "invalid syntax");
+}

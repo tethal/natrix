@@ -129,6 +129,18 @@ static int64_t eval_binop(int64_t left, BinaryOp op, int64_t right) {
                 PANIC("Division by zero");
             }
             return left / right;
+        case BINOP_EQ:
+            return left == right;
+        case BINOP_NE:
+            return left != right;
+        case BINOP_LT:
+            return left < right;
+        case BINOP_LE:
+            return left <= right;
+        case BINOP_GT:
+            return left > right;
+        case BINOP_GE:
+            return left >= right;
         default:
             assert(0);
     }

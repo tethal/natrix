@@ -36,7 +36,11 @@ else_block: KW_ELSE COLON block
 
 ### Expressions
 ```
-expression: additive_expr
+expression: relational_expr
+
+relational_expr:
+    relational_expr (EQ | NE | GT | GE | LT | LE) additive_expr
+    | additive_expr
 
 additive_expr:
     additive_expr (PLUS | MINUS) multiplicative_expr 

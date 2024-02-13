@@ -141,11 +141,51 @@ static Expr *additive_expr(Parser *parser) {
 
 /**
  * \code
- * expression: additive_expr
+ * relational_expr:
+ *     relational_expr (EQ | NE | GT | GE | LT | LE) additive_expr
+ *     | additive_expr
+ * \endcode
+ */
+static Expr* relational_expr(Parser *parser) {
+    Expr *result = additive_expr(parser);
+    if (!result) {
+        return NULL;
+    }
+    BinaryOp op;
+    switch (parser->current.type) {
+        case TOKEN_EQ:
+            op = BINOP_EQ;
+            break;
+        case TOKEN_NE:
+            op = BINOP_NE;
+            break;
+        case TOKEN_GT:
+            op = BINOP_GT;
+            break;
+        case TOKEN_GE:
+            op = BINOP_GE;
+            break;
+        case TOKEN_LT:
+            op = BINOP_LT;
+            break;
+        case TOKEN_LE:
+            op = BINOP_LE;
+            break;
+        default:
+            return result;
+    }
+    consume(parser);
+    Expr *right = additive_expr(parser);
+    return right ? ast_create_expr_binary(parser->arena, result, op, right) : NULL;
+}
+
+/**
+ * \code
+ * expression: relational_expr
  * \endcode
  */
 static Expr *expression(Parser *parser) {
-    return additive_expr(parser);
+    return relational_expr(parser);
 }
 
 /**

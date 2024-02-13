@@ -1,0 +1,25 @@
+AST dump:
+  STMT_EXPR
+    expr: EXPR_BINARY {op: EQ}
+      left: EXPR_NAME {identifier: "a"}
+      right: EXPR_NAME {identifier: "b"}
+  STMT_EXPR
+    expr: EXPR_BINARY {op: NE}
+      left: EXPR_NAME {identifier: "a"}
+      right: EXPR_NAME {identifier: "b"}
+  STMT_EXPR
+    expr: EXPR_BINARY {op: LT}
+      left: EXPR_NAME {identifier: "a"}
+      right: EXPR_NAME {identifier: "b"}
+  STMT_EXPR
+    expr: EXPR_BINARY {op: GT}
+      left: EXPR_NAME {identifier: "a"}
+      right: EXPR_NAME {identifier: "b"}
+  STMT_EXPR
+    expr: EXPR_BINARY {op: LE}
+      left: EXPR_NAME {identifier: "a"}
+      right: EXPR_NAME {identifier: "b"}
+  STMT_EXPR
+    expr: EXPR_BINARY {op: GE}
+      left: EXPR_NAME {identifier: "a"}
+      right: EXPR_NAME {identifier: "b"}

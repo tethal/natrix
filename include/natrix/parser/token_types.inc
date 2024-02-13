@@ -22,6 +22,12 @@ TT(LPAREN)        // (
 TT(RPAREN)        // )
 TT(EQUALS)        // =
 TT(COLON)         // :
+TT(EQ)            // ==
+TT(NE)            // !=
+TT(GE)            // >=
+TT(GT)            // >
+TT(LE)            // <=
+TT(LT)            // <
 
 // literals
 TT(INT_LITERAL)   // [0-9]+
