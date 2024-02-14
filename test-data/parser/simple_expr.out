@@ -10,3 +10,8 @@ AST dump:
     right: EXPR_BINARY {op: MUL}
       left: EXPR_NAME {identifier: "b8_c"}
       right: EXPR_INT_LITERAL {literal: "6"}
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "x"}
+    right: EXPR_BINARY {op: ADD}
+      left: EXPR_STR_LITERAL {literal: "abc"}
+      right: EXPR_STR_LITERAL {literal: "xyz"}

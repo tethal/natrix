@@ -18,13 +18,45 @@
 #include "natrix/util/panic.h"
 
 /**
+ * \brief Determines the type of a value.
+ */
+typedef enum {
+    NXT_INT,                //!< integer type
+    NXT_STR,                //!< string type
+} NxType;
+
+/**
+ * \brief Represents a value.
+ */
+typedef struct {
+    NxType type;                    //!< type of the value
+    union {
+        int64_t int_value;          //!< integer value
+        const char *str_value;      //!< string value
+    };
+} NxValue;
+
+//! Returns true if the value is an integer.
+#define NXV_IS_INT(value) ((value).type == NXT_INT)
+//! Returns true if the value is a string.
+#define NXV_IS_STR(value) ((value).type == NXT_STR)
+//! Returns the integer value of the given value.
+#define NXV_AS_INT(value) ((value).int_value)
+//! Returns the string value of the given value.
+#define NXV_AS_STR(value) ((value).str_value)
+//! Creates a value from an integer.
+#define NXV_FROM_INT(value) ((NxValue) { .type = NXT_INT, .int_value = (value) })
+//! Creates a value from a string.
+#define NXV_FROM_STR(value) ((NxValue) { .type = NXT_STR, .str_value = (value) })
+
+/**
  * \brief Represents a variable in the environment.
  */
 typedef struct Variable Variable;
 struct Variable {
     const char *name_start;             //!< start of the name
     size_t name_len;                    //!< length of the name
-    int64_t value;                      //!< value of the variable
+    NxValue value;                      //!< value of the variable
     Variable *next;                     //!< next variable in the list
 };
 
@@ -62,7 +94,7 @@ static Variable *env_find(Env *env, const char *name_start, size_t name_len) {
  * \param name_len length of the name
  * \param value the value to set
  */
-static void env_set(Env *env, const char *name_start, size_t name_len, int64_t value) {
+static void env_set(Env *env, const char *name_start, size_t name_len, NxValue value) {
     Variable *var = env_find(env, name_start, name_len);
     if (!var) {
         var = arena_alloc(&env->arena, sizeof(Variable));
@@ -83,7 +115,7 @@ static void env_set(Env *env, const char *name_start, size_t name_len, int64_t v
  * \param name_len length of the name
  * \return the value of the variable
  */
-static int64_t env_get(Env *env, const char *name_start, size_t name_len) {
+static NxValue env_get(Env *env, const char *name_start, size_t name_len) {
     Variable *var = env_find(env, name_start, name_len);
     if (!var) {
         PANIC("Undefined variable: %.*s", (int) name_len, name_start);
@@ -97,7 +129,7 @@ static int64_t env_get(Env *env, const char *name_start, size_t name_len) {
  * \param len the length of the string
  * \return the integer value
  */
-static int64_t int_from_str(const char *str, size_t len) {
+static NxValue int_from_str(const char *str, size_t len) {
     int64_t value = 0;
     for (size_t i = 0; i < len; i++) {
         assert(str[i] >= '0' && str[i] <= '9');
@@ -106,17 +138,17 @@ static int64_t int_from_str(const char *str, size_t len) {
             PANIC("Integer literal too large");
         }
     }
-    return value;
+    return NXV_FROM_INT(value);
 }
 
 /**
- * \brief Evaluates the given binary operation.
+ * \brief Evaluates the given binary operation on integers.
  * \param left left operand
  * \param op binary operation
  * \param right right operand
  * \return the result of the operation
  */
-static int64_t eval_binop(int64_t left, BinaryOp op, int64_t right) {
+static int64_t eval_binop_int(int64_t left, BinaryOp op, int64_t right) {
     switch (op) {
         case BINOP_ADD:
             return left + right;
@@ -147,25 +179,75 @@ static int64_t eval_binop(int64_t left, BinaryOp op, int64_t right) {
 }
 
 /**
+ * \brief Evaluates the given binary operation.
+ * \param env the environment for allocation
+ * \param left left operand
+ * \param op binary operation
+ * \param right right operand
+ * \return the result of the operation
+ */
+static NxValue eval_binop(Env *env, NxValue left, BinaryOp op, NxValue right) {
+    if (NXV_IS_INT(left) && NXV_IS_INT(right)) {
+        int64_t result = eval_binop_int(NXV_AS_INT(left), op, NXV_AS_INT(right));
+        return NXV_FROM_INT(result);
+    }
+    if (op == BINOP_ADD && NXV_IS_STR(left) && NXV_IS_STR(right)) {
+        size_t len1 = strlen(NXV_AS_STR(left));
+        size_t len2 = strlen(NXV_AS_STR(right));
+        char *result = arena_alloc(&env->arena, len1 + len2 + 1);
+        memcpy(result, NXV_AS_STR(left), len1);
+        memcpy(result + len1, NXV_AS_STR(right), len2);
+        result[len1 + len2] = '\0';
+        return NXV_FROM_STR(result);
+    }
+    PANIC("Operands must be integers");
+}
+
+/**
  * \brief Evaluates the given expression.
  * \param env the environment for variable lookup
  * \param expr the expression to evaluate
  * \return the result of the expression
  */
-static int64_t eval_expr(Env *env, const Expr *expr) {
+static NxValue eval_expr(Env *env, const Expr *expr) {
     switch (expr->kind) {
         case EXPR_INT_LITERAL:
             return int_from_str(expr->literal.start, expr->literal.end - expr->literal.start);
+        case EXPR_STR_LITERAL: {
+            assert(expr->literal.start[0] == '"' && expr->literal.end[-1] == '"');
+            size_t len = expr->literal.end - expr->literal.start - 2;
+            char *value = arena_alloc(&env->arena, len + 1);
+            memcpy(value, expr->literal.start + 1, len);
+            value[len] = '\0';
+            return NXV_FROM_STR(value);
+        }
         case EXPR_NAME:
             return env_get(env, expr->identifier.start, expr->identifier.end - expr->identifier.start);
-        case EXPR_BINARY:
-            return eval_binop(eval_expr(env, expr->binary.left), expr->binary.op, eval_expr(env, expr->binary.right));
+        case EXPR_BINARY: {
+            NxValue left = eval_expr(env, expr->binary.left);
+            NxValue right = eval_expr(env, expr->binary.right);
+            return eval_binop(env, left, expr->binary.op, right);
+        }
         default:
             assert(0);
     }
 }
 
 static void exec_stmts(Env *env, const Stmt *stmt);
+
+/**
+ * \brief Evaluates an expression, checks that it is an integer, and returns the result as a boolean.
+ * \param env the environment for variable lookup
+ * \param expr the condition expression
+ * \return the result of the condition
+ */
+static bool eval_cond(Env *env, const Expr *expr) {
+    NxValue value = eval_expr(env, expr);
+    if (!NXV_IS_INT(value)) {
+        PANIC("Condition must be an integer");
+    }
+    return NXV_AS_INT(value) != 0;
+}
 
 /**
  * \brief Executes the given statement.
@@ -179,19 +261,19 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
             break;
         case STMT_ASSIGNMENT: {
             assert(stmt->assignment.left->kind == EXPR_NAME);
-            int64_t rhs = eval_expr(env, stmt->assignment.right);
+            NxValue rhs = eval_expr(env, stmt->assignment.right);
             const char *start = stmt->assignment.left->identifier.start;
             const char *end = stmt->assignment.left->identifier.end;
             env_set(env, start, end - start, rhs);
             break;
         }
         case STMT_WHILE:
-            while (eval_expr(env, stmt->while_stmt.condition)) {
+            while (eval_cond(env, stmt->while_stmt.condition)) {
                 exec_stmts(env, stmt->while_stmt.body);
             }
             break;
         case STMT_IF:
-            if (eval_expr(env, stmt->if_stmt.condition)) {
+            if (eval_cond(env, stmt->if_stmt.condition)) {
                 exec_stmts(env, stmt->if_stmt.then_body);
             } else if (stmt->if_stmt.else_body) {
                 exec_stmts(env, stmt->if_stmt.else_body);
@@ -199,9 +281,17 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
             break;
         case STMT_PASS:
             break;
-        case STMT_PRINT:
-            printf("%ld\n", eval_expr(env, stmt->expr));
+        case STMT_PRINT: {
+            NxValue value = eval_expr(env, stmt->expr);
+            if (NXV_IS_INT(value)) {
+                printf("%ld\n", NXV_AS_INT(value));
+            } else if (NXV_IS_STR(value)) {
+                printf("%s\n", NXV_AS_STR(value));
+            } else {
+                PANIC("Unexpected value type in print()");
+            }
             break;
+        }
         default:
             assert(0);
     }
@@ -224,7 +314,7 @@ static void exec_stmts(Env *env, const Stmt *stmt) {
  * \param source the source code
  * \param arg the argument to the program
  */
-static void run(Source *source, int64_t arg) {
+static void run(Source *source, NxValue arg) {
     Env env = {
         .arena = arena_init(),
         .head = NULL,
@@ -244,7 +334,7 @@ int main(const int argc, char **argv) {
         fprintf(stderr, "Usage: %s <filename> [arg]\n", argv[0]);
         return 1;
     }
-    int64_t arg = 0;
+    NxValue arg = NXV_FROM_INT(0);
     if (argc == 3) {
         const char *ptr = argv[2];
         while (*ptr) {

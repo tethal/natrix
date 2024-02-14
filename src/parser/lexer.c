@@ -242,6 +242,18 @@ static TokenType parse_token(Lexer *lexer) {
                 return TOKEN_GE;
             }
             return TOKEN_GT;
+        case '"':
+            // todo escape sequences
+            while (*lexer->current != '"') {
+                assert(*lexer->current != '\0');    // source code must end with a newline
+                if (*lexer->current == '\n') {
+                    lexer->error_message = "unterminated string";
+                    return TOKEN_ERROR;
+                }
+                lexer->current++;
+            }
+            lexer->current++;
+            return TOKEN_STRING_LITERAL;
         default:
             lexer->error_message = "unexpected character";
             return TOKEN_ERROR;

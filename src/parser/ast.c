@@ -38,6 +38,15 @@ Expr *ast_create_expr_int_literal(Arena *arena, const char *start, const char *e
     return expr;
 }
 
+Expr *ast_create_expr_str_literal(Arena *arena, const char *start, const char *end) {
+    assert(start < end);
+    Expr *expr = arena_alloc(arena, sizeof(Expr));
+    expr->kind = EXPR_STR_LITERAL;
+    expr->literal.start = start;
+    expr->literal.end = end;
+    return expr;
+}
+
 Expr *ast_create_expr_name(Arena *arena, const char *start, const char *end) {
     assert(start < end);
     Expr *expr = arena_alloc(arena, sizeof(Expr));
@@ -155,6 +164,9 @@ static void ast_dump_expr(StringBuilder *sb, const Expr *expr, int indent, const
     switch (expr->kind) {
         case EXPR_INT_LITERAL:
             sb_append_formatted(sb, "EXPR_INT_LITERAL {literal: \"%.*s\"}\n", (int) (expr->literal.end - expr->literal.start), expr->literal.start);
+            break;
+        case EXPR_STR_LITERAL:
+            sb_append_formatted(sb, "EXPR_STR_LITERAL {literal: %.*s}\n", (int) (expr->literal.end - expr->literal.start), expr->literal.start);
             break;
         case EXPR_NAME:
             sb_append_formatted(sb, "EXPR_NAME {identifier: \"%.*s\"}\n", (int) (expr->identifier.end - expr->identifier.start), expr->identifier.start);

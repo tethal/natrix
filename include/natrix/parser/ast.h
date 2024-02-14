@@ -28,6 +28,7 @@ extern "C" {
  */
 typedef enum {
     EXPR_INT_LITERAL,       //!< Integer literal
+    EXPR_STR_LITERAL,       //!< String literal
     EXPR_NAME,              //!< Identifier
     EXPR_BINARY,            //!< Binary operation
 } ExprKind;
@@ -154,6 +155,15 @@ struct Stmt {
  * \return the newly allocated node
  */
 Expr *ast_create_expr_int_literal(Arena *arena, const char *start, const char *end);
+
+/**
+ * \brief Creates a new node representing a string literal.
+ * \param arena arena allocator from which the node will be allocated
+ * \param start pointer to the start of the string literal in the source code
+ * \param end pointer to the character after the end of the string literal
+ * \return the newly allocated node
+ */
+Expr *ast_create_expr_str_literal(Arena *arena, const char *start, const char *end);
 
 /**
  * \brief Creates a new node representing a name.

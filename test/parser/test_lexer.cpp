@@ -182,3 +182,12 @@ TEST(LexerTest, CmpOp) {
     EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_ERROR, "!"}));
     EXPECT_STREQ(lexer_error_message(&lexer), "invalid syntax");
 }
+
+TEST(LexerTest, StringLiteral) {
+    Lexer lexer;
+    lexer_init(&lexer, "\"\" \"a\\z\" \"ab\n");
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_STRING_LITERAL, "\"\""}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_STRING_LITERAL, "\"a\\z\""}));
+    EXPECT_EQ(lexer_next_token(&lexer), (EToken{TOKEN_ERROR, "\"ab"}));
+    EXPECT_STREQ(lexer_error_message(&lexer), "unterminated string");
+}

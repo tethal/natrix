@@ -78,6 +78,7 @@ static Stmt *block(Parser *parser);
  * \code
  * primary:
  *    INT_LITERAL
+ *    | STRING_LITERAL
  *    | IDENTIFIER
  *    | LPAREN expression RPAREN
  * \endcode
@@ -86,6 +87,10 @@ static Expr *primary(Parser *parser) {
     if (parser->current.type == TOKEN_INT_LITERAL) {
         Token t = consume(parser);
         return ast_create_expr_int_literal(parser->arena, t.start, t.end);
+    }
+    if (parser->current.type == TOKEN_STRING_LITERAL) {
+        Token t = consume(parser);
+        return ast_create_expr_str_literal(parser->arena, t.start, t.end);
     }
     if (parser->current.type == TOKEN_IDENTIFIER) {
         Token t = consume(parser);
