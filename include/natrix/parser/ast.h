@@ -29,8 +29,10 @@ extern "C" {
 typedef enum {
     EXPR_INT_LITERAL,       //!< Integer literal
     EXPR_STR_LITERAL,       //!< String literal
+    EXPR_LIST_LITERAL,      //!< List literal
     EXPR_NAME,              //!< Identifier
     EXPR_BINARY,            //!< Binary operation
+    EXPR_SUBSCRIPT,         //!< Subscript operation
 } ExprKind;
 
 /**
@@ -66,11 +68,12 @@ typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 
 /**
- * \brief Attributes of the `EXPR_INT_LITERAL` AST node.
+ * \brief Attributes of the `EXPR_INT_LITERAL`, `EXPR_STR_LITERAL` and `EXPR_LIST_LITERAL` AST nodes.
  */
 typedef struct {
-    const char *start;              //!< Pointer to the start of the integer literal in the source code
-    const char *end;                //!< Pointer to the character after the end of the integer literal
+    const char *start;              //!< Pointer to the start of the literal in the source code
+    const char *end;                //!< Pointer to the character after the end of the literal
+    Expr *head;                     //!< Head of list literal, `NULL` if the literal is not a list or is empty
 } ExprLiteral;
 
 /**
@@ -91,17 +94,28 @@ typedef struct {
 } ExprBinary;
 
 /**
+ * \brief Attributes of the `EXPR_SUBSCRIPT` AST node.
+ */
+typedef struct {
+    Expr *receiver;                 //!< Receiver of the subscript operation
+    Expr *index;                    //!< Index of the subscript operation
+    const char *end;                //!< Pointer to the character after the closing bracket
+} ExprSubscript;
+
+/**
  * \brief AST node representing an expression.
  */
 struct Expr {
     ExprKind kind;                  //!< Kind of the expression, determines which field of the union is active
+    Expr *next;                     //!< Pointer to the next expression in the sequence
     /**
      * \brief Union of all possible kinds of expression nodes.
      */
     union {
-        ExprLiteral literal;        //!< Value of a literal, active when `kind` is `EXPR_INT_LITERAL`
+        ExprLiteral literal;        //!< Value of a literal, active when `kind` is `EXPR_INT_LITERAL`, `EXPR_STR_LITERAL` or `EXPR_LIST_LITERAL`
         ExprName identifier;        //!< Identifier, active when `kind` is `EXPR_NAME`
         ExprBinary binary;          //!< Binary operation, active when `kind` is `EXPR_BINARY`
+        ExprSubscript subscript;    //!< Subscript operation, active when `kind` is `EXPR_SUBSCRIPT`
     };
 };
 
@@ -166,6 +180,16 @@ Expr *ast_create_expr_int_literal(Arena *arena, const char *start, const char *e
 Expr *ast_create_expr_str_literal(Arena *arena, const char *start, const char *end);
 
 /**
+ * \brief Creates a new node representing a list literal.
+ * \param arena arena allocator from which the node will be allocated
+ * \param start pointer to the start of the list literal in the source code
+ * \param end pointer to the character after the end of the list literal
+ * \param head head of the list, `NULL` if the list is empty
+ * \return the newly allocated node
+ */
+Expr *ast_create_expr_list_literal(Arena *arena, const char *start, const char *end, Expr *head);
+
+/**
  * \brief Creates a new node representing a name.
  * \param arena arena allocator from which the node will be allocated
  * \param start pointer to the start of the identifier in the source code
@@ -183,6 +207,16 @@ Expr *ast_create_expr_name(Arena *arena, const char *start, const char *end);
  * \return the newly allocated node
  */
 Expr *ast_create_expr_binary(Arena *arena, Expr *left, BinaryOp op, Expr *right);
+
+/**
+ * \brief Creates a new node representing a subscript operation.
+ * \param arena arena allocator from which the node will be allocated
+ * \param receiver receiver of the subscript operation
+ * \param index index of the subscript operation
+ * \param end pointer to the character after the closing bracket
+ * \return the newly allocated node
+ */
+Expr *ast_create_expr_subscript(Arena *arena, Expr *receiver, Expr *index, const char *end);
 
 /**
  * \brief Creates a new node representing an expression statement.

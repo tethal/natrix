@@ -20,6 +20,8 @@ TT(STAR)                // *
 TT(SLASH)               // /
 TT(LPAREN)              // (
 TT(RPAREN)              // )
+TT(LBRACKET)            // [
+TT(RBRACKET)            // ]
 TT(EQUALS)              // =
 TT(COLON)               // :
 TT(EQ)                  // ==
@@ -28,6 +30,7 @@ TT(GE)                  // >=
 TT(GT)                  // >
 TT(LE)                  // <=
 TT(LT)                  // <
+TT(COMMA)               // ,
 
 // literals
 TT(INT_LITERAL)         // [0-9]+

@@ -23,16 +23,21 @@
 typedef enum {
     NXT_INT,                //!< integer type
     NXT_STR,                //!< string type
+    NXT_LIST,               //!< list type
 } NxType;
 
 /**
  * \brief Represents a value.
  */
-typedef struct {
+typedef struct NxValue {
     NxType type;                    //!< type of the value
     union {
         int64_t int_value;          //!< integer value
         const char *str_value;      //!< string value
+        struct {
+            struct NxValue *data;   //!< pointer to the data
+            size_t len;             //!< length of the list
+        } list_value;
     };
 } NxValue;
 
@@ -40,6 +45,8 @@ typedef struct {
 #define NXV_IS_INT(value) ((value).type == NXT_INT)
 //! Returns true if the value is a string.
 #define NXV_IS_STR(value) ((value).type == NXT_STR)
+//! Returns true if the value is a list.
+#define NXV_IS_LIST(value) ((value).type == NXT_LIST)
 //! Returns the integer value of the given value.
 #define NXV_AS_INT(value) ((value).int_value)
 //! Returns the string value of the given value.
@@ -221,12 +228,48 @@ static NxValue eval_expr(Env *env, const Expr *expr) {
             value[len] = '\0';
             return NXV_FROM_STR(value);
         }
+        case EXPR_LIST_LITERAL: {
+            size_t cnt = 0;
+            Expr *e = expr->literal.head;
+            while (e) {
+                cnt++;
+                e = e->next;
+            }
+            NxValue result = (NxValue) {
+                    .type = NXT_LIST,
+                    .list_value = {
+                            .data = arena_alloc(&env->arena, cnt * sizeof(NxValue)),
+                            .len = cnt,
+                    },
+            };
+            e = expr->literal.head;
+            for (size_t i = 0; i < cnt; i++) {
+                result.list_value.data[i] = eval_expr(env, e);
+                e = e->next;
+            }
+            return result;
+        }
         case EXPR_NAME:
             return env_get(env, expr->identifier.start, expr->identifier.end - expr->identifier.start);
         case EXPR_BINARY: {
             NxValue left = eval_expr(env, expr->binary.left);
             NxValue right = eval_expr(env, expr->binary.right);
             return eval_binop(env, left, expr->binary.op, right);
+        }
+        case EXPR_SUBSCRIPT: {
+            NxValue receiver = eval_expr(env, expr->subscript.receiver);
+            NxValue index = eval_expr(env, expr->subscript.index);
+            if (!NXV_IS_INT(index)) {
+                PANIC("Index must be an integer");
+            }
+            if (!NXV_IS_LIST(receiver)) {
+                PANIC("Subscripted value must be a list");
+            }
+            int64_t i = NXV_AS_INT(index);
+            if (i < 0 || (size_t) i >= receiver.list_value.len) {
+                PANIC("Index out of range");
+            }
+            return receiver.list_value.data[i];
         }
         default:
             assert(0);
@@ -260,11 +303,28 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
             eval_expr(env, stmt->expr);
             break;
         case STMT_ASSIGNMENT: {
-            assert(stmt->assignment.left->kind == EXPR_NAME);
-            NxValue rhs = eval_expr(env, stmt->assignment.right);
-            const char *start = stmt->assignment.left->identifier.start;
-            const char *end = stmt->assignment.left->identifier.end;
-            env_set(env, start, end - start, rhs);
+            if (stmt->assignment.left->kind == EXPR_NAME) {
+                NxValue rhs = eval_expr(env, stmt->assignment.right);
+                const char *start = stmt->assignment.left->identifier.start;
+                const char *end = stmt->assignment.left->identifier.end;
+                env_set(env, start, end - start, rhs);
+            } else if (stmt->assignment.left->kind == EXPR_SUBSCRIPT) {
+                NxValue receiver = eval_expr(env, stmt->assignment.left->subscript.receiver);
+                NxValue index = eval_expr(env, stmt->assignment.left->subscript.index);
+                if (!NXV_IS_INT(index)) {
+                    PANIC("Index must be an integer");
+                }
+                if (!NXV_IS_LIST(receiver)) {
+                    PANIC("Subscripted value must be a list");
+                }
+                int64_t i = NXV_AS_INT(index);
+                if (i < 0 || (size_t) i >= receiver.list_value.len) {
+                    PANIC("Index out of range");
+                }
+                receiver.list_value.data[i] = eval_expr(env, stmt->assignment.right);
+            } else {
+                assert(stmt->assignment.left->kind == EXPR_NAME);
+            }
             break;
         }
         case STMT_WHILE:

@@ -9,15 +9,11 @@ file: statements EOF
 ```
 block: NEWLINE INDENT statements DEDENT
 
-statements: 
-    statement
-    | statement statements
+statements: statement+
 
 statement:
     KW_WHILE expression COLON block
-    | KW_IF expression COLON block
-    | KW_IF expression COLON block else_block
-    | KW_IF expression COLON block elif_block
+    | KW_IF expression COLON block (elif_block | else_block)?
     | simple_statement NEWLINE
 
 simple_statement: 
@@ -26,16 +22,15 @@ simple_statement:
     | expression EQUALS expression
     | expression
 
- elif_block:
-     KW_ELIF expression COLON block
-     | KW_ELIF expression COLON block else_block
-     | KW_ELIF expression COLON block elif_block
+elif_block: KW_ELIF expression COLON block (elif_block | else_block)?
 
 else_block: KW_ELSE COLON block
 ```
 
 ### Expressions
 ```
+expression_list: expression (COMMA expression)* COMMA?
+
 expression: relational_expr
 
 relational_expr:
@@ -47,11 +42,14 @@ additive_expr:
     | multiplicative_expr
 
 multiplicative_expr:
-    multiplicative_expr (STAR | SLASH) primary
-    | primary
+    multiplicative_expr (STAR | SLASH) postfix_expr
+    | postfix_expr
+
+postfix_expr: primary (LBRACKET expression RBRACKET)*
 
 primary:
     INT_LITERAL
     | IDENTIFIER
     | LPAREN expression RPAREN
+    | LBRACKET expression_list? RBRACKET
 ```

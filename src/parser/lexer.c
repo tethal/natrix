@@ -215,6 +215,12 @@ static TokenType parse_token(Lexer *lexer) {
             return TOKEN_LPAREN;
         case ')':
             return TOKEN_RPAREN;
+        case '[':
+            return TOKEN_LBRACKET;
+        case ']':
+            return TOKEN_RBRACKET;
+        case ',':
+            return TOKEN_COMMA;
         case '=':
             if (*lexer->current == '=') {
                 lexer->current++;

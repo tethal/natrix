@@ -136,6 +136,16 @@ TEST(ParserTest, ElifNoIndent) {
     EXPECT_EQ(diag, "error: 4:1-5: indent expected");
 }
 
+TEST(ParserTest, EmptyListWithComma) {
+    std::string diag = parse_and_capture_diag("[,]");
+    EXPECT_EQ(diag, "error: 1:2-1: expected expression");
+}
+
+TEST(ParserTest, SubscriptNoRBracket) {
+    std::string diag = parse_and_capture_diag("a[1");
+    EXPECT_EQ(diag, "error: 1:4-1: expected closing bracket");
+}
+
 TEST(ParserTest, GoldenFiles) {
     for (const auto & entry : std::filesystem::directory_iterator("parser")) {
         std::filesystem::path path = entry.path();

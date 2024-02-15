@@ -1,0 +1,33 @@
+AST dump:
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "a"}
+    right: EXPR_LIST_LITERAL
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "b"}
+    right: EXPR_LIST_LITERAL
+      EXPR_INT_LITERAL {literal: "1"}
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "c"}
+    right: EXPR_LIST_LITERAL
+      EXPR_INT_LITERAL {literal: "1"}
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "d"}
+    right: EXPR_LIST_LITERAL
+      EXPR_INT_LITERAL {literal: "1"}
+      EXPR_INT_LITERAL {literal: "2"}
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "e"}
+    right: EXPR_LIST_LITERAL
+      EXPR_INT_LITERAL {literal: "1"}
+      EXPR_INT_LITERAL {literal: "2"}
+  STMT_ASSIGNMENT
+    left: EXPR_NAME {identifier: "f"}
+    right: EXPR_LIST_LITERAL
+      EXPR_LIST_LITERAL
+  STMT_ASSIGNMENT
+    left: EXPR_SUBSCRIPT
+      receiver: EXPR_NAME {identifier: "f"}
+      index: EXPR_INT_LITERAL {literal: "1"}
+    right: EXPR_SUBSCRIPT
+      receiver: EXPR_NAME {identifier: "e"}
+      index: EXPR_INT_LITERAL {literal: "2"}

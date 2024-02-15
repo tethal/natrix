@@ -33,8 +33,10 @@ Expr *ast_create_expr_int_literal(Arena *arena, const char *start, const char *e
     assert(start < end);
     Expr *expr = arena_alloc(arena, sizeof(Expr));
     expr->kind = EXPR_INT_LITERAL;
+    expr->next = NULL;
     expr->literal.start = start;
     expr->literal.end = end;
+    expr->literal.head = NULL;
     return expr;
 }
 
@@ -42,8 +44,20 @@ Expr *ast_create_expr_str_literal(Arena *arena, const char *start, const char *e
     assert(start < end);
     Expr *expr = arena_alloc(arena, sizeof(Expr));
     expr->kind = EXPR_STR_LITERAL;
+    expr->next = NULL;
     expr->literal.start = start;
     expr->literal.end = end;
+    expr->literal.head = NULL;
+    return expr;
+}
+
+Expr *ast_create_expr_list_literal(Arena *arena, const char *start, const char *end, Expr *head) {
+    Expr *expr = arena_alloc(arena, sizeof(Expr));
+    expr->kind = EXPR_LIST_LITERAL;
+    expr->next = NULL;
+    expr->literal.start = start;
+    expr->literal.end = end;
+    expr->literal.head = head;
     return expr;
 }
 
@@ -51,6 +65,7 @@ Expr *ast_create_expr_name(Arena *arena, const char *start, const char *end) {
     assert(start < end);
     Expr *expr = arena_alloc(arena, sizeof(Expr));
     expr->kind = EXPR_NAME;
+    expr->next = NULL;
     expr->identifier.start = start;
     expr->identifier.end = end;
     return expr;
@@ -60,15 +75,27 @@ Expr *ast_create_expr_binary(Arena *arena, Expr *left, const BinaryOp op, Expr *
     assert(left != NULL && right != NULL);
     Expr *expr = arena_alloc(arena, sizeof(Expr));
     expr->kind = EXPR_BINARY;
+    expr->next = NULL;
     expr->binary.left = left;
     expr->binary.op = op;
     expr->binary.right = right;
     return expr;
 }
 
+Expr *ast_create_expr_subscript(Arena *arena, Expr *receiver, Expr *index, const char *end) {
+    assert(receiver != NULL && index != NULL);
+    Expr *expr = arena_alloc(arena, sizeof(Expr));
+    expr->kind = EXPR_SUBSCRIPT;
+    expr->next = NULL;
+    expr->subscript.receiver = receiver;
+    expr->subscript.index = index;
+    expr->subscript.end = end;
+    return expr;
+}
+
 Stmt *ast_create_stmt_assignment(Arena *arena, Expr *left, Expr *right) {
     assert(left != NULL && right != NULL);
-    assert(left->kind == EXPR_NAME);
+    assert(left->kind == EXPR_NAME || left->kind == EXPR_SUBSCRIPT);
     Stmt *stmt = arena_alloc(arena, sizeof(Stmt));
     stmt->kind = STMT_ASSIGNMENT;
     stmt->next = NULL;
@@ -126,11 +153,15 @@ Stmt *ast_create_stmt_print(Arena *arena, Expr *expr) {
 const char *ast_get_expr_start(const Expr *expr) {
     switch (expr->kind) {
         case EXPR_INT_LITERAL:
+        case EXPR_STR_LITERAL:
+        case EXPR_LIST_LITERAL:
             return expr->literal.start;
         case EXPR_NAME:
             return expr->identifier.start;
         case EXPR_BINARY:
             return ast_get_expr_start(expr->binary.left);
+        case EXPR_SUBSCRIPT:
+            return ast_get_expr_start(expr->subscript.receiver);
         default:
             assert(0);
     }
@@ -139,15 +170,21 @@ const char *ast_get_expr_start(const Expr *expr) {
 const char *ast_get_expr_end(const Expr *expr) {
     switch (expr->kind) {
         case EXPR_INT_LITERAL:
+        case EXPR_STR_LITERAL:
+        case EXPR_LIST_LITERAL:
             return expr->literal.end;
         case EXPR_NAME:
             return expr->identifier.end;
         case EXPR_BINARY:
             return ast_get_expr_end(expr->binary.right);
+        case EXPR_SUBSCRIPT:
+            return expr->subscript.end;
         default:
             assert(0);
     }
 }
+
+static void ast_dump_exprs(StringBuilder *sb, const Expr *expr, int indent);
 
 /**
  * \brief Dumps the given expression to the given string builder.
@@ -168,6 +205,10 @@ static void ast_dump_expr(StringBuilder *sb, const Expr *expr, int indent, const
         case EXPR_STR_LITERAL:
             sb_append_formatted(sb, "EXPR_STR_LITERAL {literal: %.*s}\n", (int) (expr->literal.end - expr->literal.start), expr->literal.start);
             break;
+        case EXPR_LIST_LITERAL:
+            sb_append_formatted(sb, "EXPR_LIST_LITERAL\n");
+            ast_dump_exprs(sb, expr->literal.head, indent);
+            break;
         case EXPR_NAME:
             sb_append_formatted(sb, "EXPR_NAME {identifier: \"%.*s\"}\n", (int) (expr->identifier.end - expr->identifier.start), expr->identifier.start);
             break;
@@ -177,8 +218,26 @@ static void ast_dump_expr(StringBuilder *sb, const Expr *expr, int indent, const
             ast_dump_expr(sb, expr->binary.left, indent + 2, "left");
             ast_dump_expr(sb, expr->binary.right, indent + 2, "right");
             break;
+        case EXPR_SUBSCRIPT:
+            sb_append_str(sb, "EXPR_SUBSCRIPT\n");
+            ast_dump_expr(sb, expr->subscript.receiver, indent + 2, "receiver");
+            ast_dump_expr(sb, expr->subscript.index, indent + 2, "index");
+            break;
         default:
             assert(0 && "Invalid ExprKind");
+    }
+}
+
+/**
+ * \brief Dumps the given list of expression to the given string builder.
+ * \param sb the string builder
+ * \param expr the list of expressions to dump
+ * \param indent the indentation level
+ */
+static void ast_dump_exprs(StringBuilder *sb, const Expr *expr, int indent) {
+    while (expr) {
+        ast_dump_expr(sb, expr, indent + 2, NULL);
+        expr = expr->next;
     }
 }
 
@@ -233,8 +292,8 @@ static void ast_dump_stmt(StringBuilder *sb, const Stmt *stmt, int indent) {
  * \param label the label to print before the list of statements
  */
 static void ast_dump_stmts(StringBuilder *sb, const Stmt *stmt, int indent, const char *label) {
-    sb_append_formatted(sb, "%*s", indent, "");
     if (label) {
+        sb_append_formatted(sb, "%*s", indent, "");
         sb_append_formatted(sb, "%s:\n", label);
     }
     while (stmt) {

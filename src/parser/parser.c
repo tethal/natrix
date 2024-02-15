@@ -76,11 +76,40 @@ static Stmt *block(Parser *parser);
 
 /**
  * \code
+ * expression_list: expression (COMMA expression)* COMMA?
+ * \endcode
+ */
+static Expr *expression_list(Parser *parser, TokenType sentinel) {
+    Expr *result = NULL;
+    Expr *last = NULL;
+    while (1) {
+        Expr *expr = expression(parser);
+        if (!expr) {
+            return NULL;
+        }
+        if (last) {
+            last->next = expr;
+        } else {
+            result = expr;
+        }
+        last = expr;
+        if (parser->current.type == TOKEN_COMMA) {
+            consume(parser);
+        }
+        if (parser->current.type == sentinel) {
+            return result;
+        }
+    }
+}
+
+/**
+ * \code
  * primary:
  *    INT_LITERAL
  *    | STRING_LITERAL
  *    | IDENTIFIER
  *    | LPAREN expression RPAREN
+ *    | LBRACKET expression_list? RBRACKET
  * \endcode
  */
 static Expr *primary(Parser *parser) {
@@ -104,23 +133,57 @@ static Expr *primary(Parser *parser) {
         }
         return NULL;
     }
+    if (parser->current.type == TOKEN_LBRACKET) {
+        const char *start = consume(parser).start;
+        const char *end;
+        Expr *expr = NULL;
+        if (parser->current.type == TOKEN_RBRACKET) {
+            end = consume(parser).end;
+        } else {
+            expr = expression_list(parser, TOKEN_RBRACKET);
+            end = parser->current.end;
+            if (!expr || !match(parser, TOKEN_RBRACKET, "expected closing bracket")) {
+                return NULL;
+            }
+        }
+        return ast_create_expr_list_literal(parser->arena, start, end, expr);
+    }
     error(parser, "expected expression");
     return NULL;
 }
 
 /**
  * \code
+ * postfix_expr: primary (LBRACKET expression RBRACKET)*
+ * \endcode
+ */
+static Expr *postfix_expr(Parser *parser) {
+    Expr *expr = primary(parser);
+    while (parser->current.type == TOKEN_LBRACKET) {
+        consume(parser);
+        Expr *index = expression(parser);
+        const char *end = parser->current.end;
+        if (!index || !match(parser, TOKEN_RBRACKET, "expected closing bracket")) {
+            return NULL;
+        }
+        expr = ast_create_expr_subscript(parser->arena, expr, index, end);
+    }
+    return expr;
+}
+
+/**
+ * \code
  * multiplicative_expr:
- *    multiplicative_expr (STAR | SLASH) primary
- *    | primary
+ *    multiplicative_expr (STAR | SLASH) postfix_expr
+ *    | postfix_expr
  * \endcode
  */
 static Expr *multiplicative_expr(Parser *parser) {
-    Expr *result = primary(parser);
+    Expr *result = postfix_expr(parser);
     while (result && (parser->current.type == TOKEN_STAR || parser->current.type == TOKEN_SLASH)) {
         BinaryOp op = parser->current.type == TOKEN_STAR ? BINOP_MUL : BINOP_DIV;
         consume(parser);
-        Expr *right = primary(parser);
+        Expr *right = postfix_expr(parser);
         result = right ? ast_create_expr_binary(parser->arena, result, op, right) : NULL;
     }
     return result;
@@ -224,7 +287,7 @@ static Stmt *simple_statement(Parser *parser) {
     if (parser->current.type != TOKEN_EQUALS) {
         return ast_create_stmt_expr(parser->arena, expr);
     }
-    if (expr->kind != EXPR_NAME) {
+    if (expr->kind != EXPR_NAME && expr->kind != EXPR_SUBSCRIPT) {
         parser->diag_handler(parser->diag_data, DIAG_ERROR, parser->source, ast_get_expr_start(expr),
                              ast_get_expr_end(expr), "cannot assign to expression here");
         return NULL;
@@ -250,10 +313,7 @@ static Stmt *else_block(Parser *parser) {
 
 /**
  * \code
- * elif_block:
- *     KW_ELIF expression COLON block
- *     | KW_ELIF expression COLON block else_block
- *     | KW_ELIF expression COLON block elif_block
+ * elif_block: KW_ELIF expression COLON block (elif_block | else_block)?
  * \endcode
  * \note This function is also used to parse the `if` statement, only the keyword is different.
  */
@@ -283,9 +343,7 @@ static Stmt *elif_block(Parser *parser) {
  * \code
  * statement:
  *     KW_WHILE expression COLON block
- *     | KW_IF expression COLON block
- *     | KW_IF expression COLON block else_block
- *     | KW_IF expression COLON block elif_block
+ *     | KW_IF expression COLON block (elif_block | else_block)?
  *     | simple_statement NEWLINE
  * \endcode
  */
@@ -315,9 +373,7 @@ static Stmt *statement(Parser *parser) {
 
 /**
  * \code
- * statements:
- *     statement
- *     | statement statements
+ * statements: statement+
  * \endcode
  */
 static Stmt *statements(Parser *parser, TokenType sentinel) {
