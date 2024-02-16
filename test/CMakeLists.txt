@@ -23,6 +23,7 @@ add_executable(natrix_test EXCLUDE_FROM_ALL
         parser/test_source.cpp
         parser/test_token.cpp
         util/test_arena.cpp
+        util/test_gc.cpp
         util/test_mem.cpp
         util/test_sb.cpp
 )

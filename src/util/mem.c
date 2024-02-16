@@ -16,11 +16,16 @@
 #include "natrix/util/panic.h"
 
 void *nx_alloc(size_t size_in_bytes) {
-    assert(size_in_bytes > 0);      // avoid implementation-defined behavior
-    void *ptr = malloc(size_in_bytes);
+    void *ptr = nx_alloc_no_panic(size_in_bytes);
     if (ptr == NULL) {
         PANIC("Out of memory");
     }
+    return ptr;
+}
+
+void *nx_alloc_no_panic(size_t size_in_bytes) {
+    assert(size_in_bytes > 0);      // avoid implementation-defined behavior
+    void *ptr = malloc(size_in_bytes);
     assert(NX_IS_ALIGNED(ptr));
     return ptr;
 }

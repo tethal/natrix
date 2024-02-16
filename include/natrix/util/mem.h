@@ -44,6 +44,16 @@ extern "C" {
 void *nx_alloc(size_t size_in_bytes);
 
 /**
+ * \brief Allocates a block of memory using the system allocator.
+ *
+ * Simple wrapper around `malloc` to provide abstraction for memory allocation.
+ * Unlike `nx_alloc`, this function may return NULL.
+ * \param size_in_bytes the size of the block to allocate, must be greater than 0
+ * \return a pointer to the allocated block or NULL if the allocation fails
+ */
+void *nx_alloc_no_panic(size_t size_in_bytes);
+
+/**
  * \brief Reallocates a block of memory using the system allocator.
  *
  * The function always returns a valid pointer. If the allocation fails, the function panics.

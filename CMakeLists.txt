@@ -17,6 +17,7 @@ add_library(natrix_lib STATIC
         src/parser/source.c
         src/parser/token.c
         src/util/arena.c
+        src/util/gc.c
         src/util/log.c
         src/util/mem.c
         src/util/panic.c
@@ -28,6 +29,11 @@ option(ENABLE_ARENA_STATS "Enable arena stats" OFF)
 if(ENABLE_ARENA_STATS)
     target_compile_definitions(natrix_lib PUBLIC ENABLE_ARENA_STATS=1)
 endif(ENABLE_ARENA_STATS)
+
+option(ENABLE_GC_STATS "Enable GC stats" OFF)
+if(ENABLE_GC_STATS)
+    target_compile_definitions(natrix_lib PUBLIC ENABLE_GC_STATS=1)
+endif(ENABLE_GC_STATS)
 
 option(ENABLE_TOKEN_LOGGING "Enable logging of tokens produced by the lexer" OFF)
 if(ENABLE_TOKEN_LOGGING)
