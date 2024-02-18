@@ -10,6 +10,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(natrix_lib STATIC
+        src/obj/nx_type.c
         src/parser/ast.c
         src/parser/diag.c
         src/parser/lexer.c
