@@ -18,6 +18,7 @@ add_custom_target(check COMMAND $<TARGET_FILE:natrix_test> DEPENDS natrix_test W
 
 add_executable(natrix_test EXCLUDE_FROM_ALL
         obj/test_nx_int.cpp
+        obj/test_nx_list.cpp
         obj/test_nx_str.cpp
         parser/test_ast.cpp
         parser/test_lexer.cpp

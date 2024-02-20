@@ -11,6 +11,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(natrix_lib STATIC
         src/obj/nx_int.c
+        src/obj/nx_list.c
+        src/obj/nx_object_array.c
         src/obj/nx_str.c
         src/obj/nx_type.c
         src/parser/ast.c
