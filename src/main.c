@@ -13,57 +13,22 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "natrix/obj/nx_int.h"
+#include "natrix/obj/nx_list.h"
+#include "natrix/obj/nx_str.h"
 #include "natrix/parser/diag.h"
 #include "natrix/parser/parser.h"
 #include "natrix/util/panic.h"
-
-/**
- * \brief Determines the type of a value.
- */
-typedef enum {
-    NXT_INT,                //!< integer type
-    NXT_STR,                //!< string type
-    NXT_LIST,               //!< list type
-} NxType;
-
-/**
- * \brief Represents a value.
- */
-typedef struct NxValue {
-    NxType type;                    //!< type of the value
-    union {
-        int64_t int_value;          //!< integer value
-        const char *str_value;      //!< string value
-        struct {
-            struct NxValue *data;   //!< pointer to the data
-            size_t len;             //!< length of the list
-        } list_value;
-    };
-} NxValue;
-
-//! Returns true if the value is an integer.
-#define NXV_IS_INT(value) ((value).type == NXT_INT)
-//! Returns true if the value is a string.
-#define NXV_IS_STR(value) ((value).type == NXT_STR)
-//! Returns true if the value is a list.
-#define NXV_IS_LIST(value) ((value).type == NXT_LIST)
-//! Returns the integer value of the given value.
-#define NXV_AS_INT(value) ((value).int_value)
-//! Returns the string value of the given value.
-#define NXV_AS_STR(value) ((value).str_value)
-//! Creates a value from an integer.
-#define NXV_FROM_INT(value) ((NxValue) { .type = NXT_INT, .int_value = (value) })
-//! Creates a value from a string.
-#define NXV_FROM_STR(value) ((NxValue) { .type = NXT_STR, .str_value = (value) })
 
 /**
  * \brief Represents a variable in the environment.
  */
 typedef struct Variable Variable;
 struct Variable {
+    GcHeader gc_header;                 //!< header for garbage collector
     const char *name_start;             //!< start of the name
     size_t name_len;                    //!< length of the name
-    NxValue value;                      //!< value of the variable
+    NxObject *value;                    //!< value of the variable
     Variable *next;                     //!< next variable in the list
 };
 
@@ -74,9 +39,20 @@ struct Variable {
  * It will be replaced with a more efficient data structure in the future.
  */
 typedef struct Env {
-    Arena arena;                        //!< arena for memory allocation
+    GcHeader gc_header;                 //!< header for garbage collector
     Variable *head;                     //!< head of the list of variables
 } Env;
+
+static void variable_gc_trace(void *ptr) {
+    Variable *var = (Variable *) ptr;
+    gc_visit(&var->value->gc_header);
+    gc_visit(&var->next->gc_header);
+}
+
+static void env_gc_trace(void *ptr) {
+    Env *env = (Env *) ptr;
+    gc_visit(&env->head->gc_header);
+}
 
 /**
  * \brief Finds a variable in the environment.
@@ -101,10 +77,12 @@ static Variable *env_find(Env *env, const char *name_start, size_t name_len) {
  * \param name_len length of the name
  * \param value the value to set
  */
-static void env_set(Env *env, const char *name_start, size_t name_len, NxValue value) {
+static void env_set(Env *env, const char *name_start, size_t name_len, NxObject *value) {
     Variable *var = env_find(env, name_start, name_len);
     if (!var) {
-        var = arena_alloc(&env->arena, sizeof(Variable));
+        nxo_root(value);
+        var = (Variable *) gc_alloc(sizeof(Variable), variable_gc_trace);
+        nxo_unroot(value);
         var->name_start = name_start;
         var->name_len = name_len;
         var->next = env->head;
@@ -122,7 +100,7 @@ static void env_set(Env *env, const char *name_start, size_t name_len, NxValue v
  * \param name_len length of the name
  * \return the value of the variable
  */
-static NxValue env_get(Env *env, const char *name_start, size_t name_len) {
+static NxObject *env_get(Env *env, const char *name_start, size_t name_len) {
     Variable *var = env_find(env, name_start, name_len);
     if (!var) {
         PANIC("Undefined variable: %.*s", (int) name_len, name_start);
@@ -136,7 +114,7 @@ static NxValue env_get(Env *env, const char *name_start, size_t name_len) {
  * \param len the length of the string
  * \return the integer value
  */
-static NxValue int_from_str(const char *str, size_t len) {
+static NxObject *int_from_str(const char *str, size_t len) {
     int64_t value = 0;
     for (size_t i = 0; i < len; i++) {
         assert(str[i] >= '0' && str[i] <= '9');
@@ -145,7 +123,7 @@ static NxValue int_from_str(const char *str, size_t len) {
             PANIC("Integer literal too large");
         }
     }
-    return NXV_FROM_INT(value);
+    return nx_int_create(value);
 }
 
 /**
@@ -193,19 +171,16 @@ static int64_t eval_binop_int(int64_t left, BinaryOp op, int64_t right) {
  * \param right right operand
  * \return the result of the operation
  */
-static NxValue eval_binop(Env *env, NxValue left, BinaryOp op, NxValue right) {
-    if (NXV_IS_INT(left) && NXV_IS_INT(right)) {
-        int64_t result = eval_binop_int(NXV_AS_INT(left), op, NXV_AS_INT(right));
-        return NXV_FROM_INT(result);
+static NxObject *eval_binop(Env *env, NxObject *left, BinaryOp op, NxObject *right) {
+    if (nx_int_is_instance(left) && nx_int_is_instance(right)) {
+        int64_t result = eval_binop_int(nx_int_get_value(left), op, nx_int_get_value(right));
+        return nx_int_create(result);
     }
-    if (op == BINOP_ADD && NXV_IS_STR(left) && NXV_IS_STR(right)) {
-        size_t len1 = strlen(NXV_AS_STR(left));
-        size_t len2 = strlen(NXV_AS_STR(right));
-        char *result = arena_alloc(&env->arena, len1 + len2 + 1);
-        memcpy(result, NXV_AS_STR(left), len1);
-        memcpy(result + len1, NXV_AS_STR(right), len2);
-        result[len1 + len2] = '\0';
-        return NXV_FROM_STR(result);
+    if (op == BINOP_ADD && nx_str_is_instance(left) && nx_str_is_instance(right)) {
+        nxo_root(right);
+        NxObject *result = nx_str_concat(left, right);
+        nxo_unroot(right);
+        return result;
     }
     PANIC("Operands must be integers");
 }
@@ -216,60 +191,62 @@ static NxValue eval_binop(Env *env, NxValue left, BinaryOp op, NxValue right) {
  * \param expr the expression to evaluate
  * \return the result of the expression
  */
-static NxValue eval_expr(Env *env, const Expr *expr) {
+static NxObject *eval_expr(Env *env, const Expr *expr) {
     switch (expr->kind) {
         case EXPR_INT_LITERAL:
             return int_from_str(expr->literal.start, expr->literal.end - expr->literal.start);
         case EXPR_STR_LITERAL: {
             assert(expr->literal.start[0] == '"' && expr->literal.end[-1] == '"');
-            size_t len = expr->literal.end - expr->literal.start - 2;
-            char *value = arena_alloc(&env->arena, len + 1);
-            memcpy(value, expr->literal.start + 1, len);
-            value[len] = '\0';
-            return NXV_FROM_STR(value);
+            int64_t len = expr->literal.end - expr->literal.start - 2;
+            return nx_str_create(expr->literal.start + 1, len);
         }
         case EXPR_LIST_LITERAL: {
-            size_t cnt = 0;
+            int64_t cnt = 0;
             Expr *e = expr->literal.head;
             while (e) {
                 cnt++;
                 e = e->next;
             }
-            NxValue result = (NxValue) {
-                    .type = NXT_LIST,
-                    .list_value = {
-                            .data = arena_alloc(&env->arena, cnt * sizeof(NxValue)),
-                            .len = cnt,
-                    },
-            };
+            NxObject *result = nx_list_create(cnt);
+            nxo_root(result);
             e = expr->literal.head;
             for (size_t i = 0; i < cnt; i++) {
-                result.list_value.data[i] = eval_expr(env, e);
+                NxObject *value = eval_expr(env, e);
+                nxo_root(value);
+                nx_list_append(result, value);
+                nxo_unroot(value);
                 e = e->next;
             }
+            nxo_unroot(result);
             return result;
         }
         case EXPR_NAME:
             return env_get(env, expr->identifier.start, expr->identifier.end - expr->identifier.start);
         case EXPR_BINARY: {
-            NxValue left = eval_expr(env, expr->binary.left);
-            NxValue right = eval_expr(env, expr->binary.right);
-            return eval_binop(env, left, expr->binary.op, right);
+            NxObject *left = eval_expr(env, expr->binary.left);
+            nxo_root(left);
+            NxObject *right = eval_expr(env, expr->binary.right);
+            NxObject *res = eval_binop(env, left, expr->binary.op, right);
+            nxo_unroot(left);
+            return res;
         }
         case EXPR_SUBSCRIPT: {
-            NxValue receiver = eval_expr(env, expr->subscript.receiver);
-            NxValue index = eval_expr(env, expr->subscript.index);
-            if (!NXV_IS_INT(index)) {
-                PANIC("Index must be an integer");
-            }
-            if (!NXV_IS_LIST(receiver)) {
+            NxObject *receiver = eval_expr(env, expr->subscript.receiver);
+            if (!nx_list_is_instance(receiver)) {
                 PANIC("Subscripted value must be a list");
             }
-            int64_t i = NXV_AS_INT(index);
-            if (i < 0 || (size_t) i >= receiver.list_value.len) {
+            nxo_root(receiver);
+            NxObject *index = eval_expr(env, expr->subscript.index);
+            if (!nx_int_is_instance(index)) {
+                PANIC("Index must be an integer");
+            }
+            int64_t i = nx_int_get_value(index);
+            if (i < 0 || (size_t) i >= nx_list_get_length(receiver)) {
                 PANIC("Index out of range");
             }
-            return receiver.list_value.data[i];
+            NxObject *res = ((NxList *) receiver)->items->data[i];
+            nxo_unroot(receiver);
+            return res;
         }
         default:
             assert(0);
@@ -285,11 +262,11 @@ static void exec_stmts(Env *env, const Stmt *stmt);
  * \return the result of the condition
  */
 static bool eval_cond(Env *env, const Expr *expr) {
-    NxValue value = eval_expr(env, expr);
-    if (!NXV_IS_INT(value)) {
+    NxObject *value = eval_expr(env, expr);
+    if (!nx_int_is_instance(value)) {
         PANIC("Condition must be an integer");
     }
-    return NXV_AS_INT(value) != 0;
+    return nx_int_get_value(value) != 0;
 }
 
 /**
@@ -304,26 +281,28 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
             break;
         case STMT_ASSIGNMENT: {
             if (stmt->assignment.left->kind == EXPR_NAME) {
-                NxValue rhs = eval_expr(env, stmt->assignment.right);
+                NxObject *rhs = eval_expr(env, stmt->assignment.right);
                 const char *start = stmt->assignment.left->identifier.start;
                 const char *end = stmt->assignment.left->identifier.end;
                 env_set(env, start, end - start, rhs);
             } else if (stmt->assignment.left->kind == EXPR_SUBSCRIPT) {
-                NxValue receiver = eval_expr(env, stmt->assignment.left->subscript.receiver);
-                NxValue index = eval_expr(env, stmt->assignment.left->subscript.index);
-                if (!NXV_IS_INT(index)) {
-                    PANIC("Index must be an integer");
-                }
-                if (!NXV_IS_LIST(receiver)) {
+                NxObject *receiver = eval_expr(env, stmt->assignment.left->subscript.receiver);
+                if (!nx_list_is_instance(receiver)) {
                     PANIC("Subscripted value must be a list");
                 }
-                int64_t i = NXV_AS_INT(index);
-                if (i < 0 || (size_t) i >= receiver.list_value.len) {
+                nxo_root(receiver);
+                NxObject *index = eval_expr(env, stmt->assignment.left->subscript.index);
+                if (!nx_int_is_instance(index)) {
+                    PANIC("Index must be an integer");
+                }
+                int64_t i = nx_int_get_value(index);
+                if (i < 0 || (size_t) i >= nx_list_get_length(receiver)) {
                     PANIC("Index out of range");
                 }
-                receiver.list_value.data[i] = eval_expr(env, stmt->assignment.right);
+                ((NxList *) receiver)->items->data[i] = eval_expr(env, stmt->assignment.right);
+                nxo_unroot(receiver);
             } else {
-                assert(stmt->assignment.left->kind == EXPR_NAME);
+                assert(0);
             }
             break;
         }
@@ -342,11 +321,11 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
         case STMT_PASS:
             break;
         case STMT_PRINT: {
-            NxValue value = eval_expr(env, stmt->expr);
-            if (NXV_IS_INT(value)) {
-                printf("%ld\n", NXV_AS_INT(value));
-            } else if (NXV_IS_STR(value)) {
-                printf("%s\n", NXV_AS_STR(value));
+            NxObject *value = eval_expr(env, stmt->expr);
+            if (nx_int_is_instance(value)) {
+                printf("%ld\n", nx_int_get_value(value));
+            } else if (nx_str_is_instance(value)) {
+                printf("%s\n", nx_str_get_cstr(value));
             } else {
                 PANIC("Unexpected value type in print()");
             }
@@ -374,15 +353,18 @@ static void exec_stmts(Env *env, const Stmt *stmt) {
  * \param source the source code
  * \param arg the argument to the program
  */
-static void run(Source *source, NxValue arg) {
+static void run(Source *source, NxObject *arg) {
     Env env = {
-        .arena = arena_init(),
-        .head = NULL,
+            .gc_header = {.next = NULL, .trace_fn = env_gc_trace},
+            .head = NULL,
     };
-    Stmt *stmt = parse_file(&env.arena, source, diag_default_handler, NULL);
+    gc_root(&env.gc_header);
+    Arena arena = arena_init();
+    Stmt *stmt = parse_file(&arena, source, diag_default_handler, NULL);
     env_set(&env, "arg", 3, arg);
     exec_stmts(&env, stmt);
-    arena_free(&env.arena);
+    arena_free(&arena);
+    gc_unroot(&env.gc_header);
 }
 
 /**
@@ -394,7 +376,7 @@ int main(const int argc, char **argv) {
         fprintf(stderr, "Usage: %s <filename> [arg]\n", argv[0]);
         return 1;
     }
-    NxValue arg = NXV_FROM_INT(0);
+    NxObject *arg;
     if (argc == 3) {
         const char *ptr = argv[2];
         while (*ptr) {
@@ -405,12 +387,17 @@ int main(const int argc, char **argv) {
             ptr++;
         }
         arg = int_from_str(argv[2], strlen(argv[2]));
+    } else {
+        arg = nx_int_create(0);
     }
+    gc_root(&arg->gc_header);
     Source source = source_from_file(argv[1]);
     if (!source.start) {
         fprintf(stderr, "Unable to read file %s\n", argv[1]);
         return 1;
     }
     run(&source, arg);
+    gc_unroot(&arg->gc_header);
+    gc_collect();
     source_free(&source);
 }

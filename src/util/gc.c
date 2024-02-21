@@ -93,6 +93,13 @@ void gc_collect() {
     }
     gc.objects_count -= count;
 
+    // Unmark roots - some of them may be statically allocated, thus they are not in
+    // the linked list and were not unmarked in the sweep phase. If kept marked, they
+    // would not get traced in the next mark phase.
+    for (size_t i = 0; i < gc.roots_count; i++) {
+        UNMARK(gc.roots[i]);
+    }
+
     // Double the threshold if the number of surviving objects is still above 87.5% of the threshold
     if (gc.objects_count >= gc.threshold - (gc.threshold / 8)) {
         if (gc.threshold & (1L << 63)) {
