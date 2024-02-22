@@ -6,6 +6,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "natrix/obj/nx_bool.h"
 #include "natrix/obj/nx_str.h"
 
 TEST(NxStrTest, CreateAddsNullTerminator) {
@@ -28,4 +29,11 @@ TEST(NxStrTest, Concat) {
     EXPECT_STREQ(((NxStr *) result)->data, "AbcDef");
     nxo_unroot(str2);
     nxo_unroot(str1);
+}
+
+TEST(NxStrTest, AsBool) {
+    NxObject *str1 = nx_str_create("", 0);
+    EXPECT_EQ(nxo_as_bool(str1), nx_false);
+    NxObject *str2 = nx_str_create("Abc", 3);
+    EXPECT_EQ(nxo_as_bool(str2), nx_true);
 }

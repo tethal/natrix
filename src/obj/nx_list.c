@@ -12,6 +12,7 @@
 
 #include "natrix/obj/nx_list.h"
 #include <assert.h>
+#include "natrix/obj/nx_bool.h"
 
 /**
  * \brief Reports all references contained in the list to the garbage collector.
@@ -44,6 +45,13 @@ void nx_list_append(NxObject *list, NxObject *item) {
     l->items->data[l->length++] = item;
 }
 
+//! Implementation of the `as_bool` method for the `list` type.
+static NxObject *nx_list_as_bool(NxObject *self) {
+    assert(nx_list_is_instance(self));
+    return nx_bool_wrap(((NxList *) self)->length > 0);
+}
+
 const NxType nx_type_list = {
         NX_TYPE_HEADER_INIT("list", nx_list_gc_trace),
+        .as_bool_fn = nx_list_as_bool,
 };

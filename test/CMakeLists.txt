@@ -17,9 +17,11 @@ enable_testing()
 add_custom_target(check COMMAND $<TARGET_FILE:natrix_test> DEPENDS natrix_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test-data)
 
 add_executable(natrix_test EXCLUDE_FROM_ALL
+        obj/test_nx_bool.cpp
         obj/test_nx_int.cpp
         obj/test_nx_list.cpp
         obj/test_nx_str.cpp
+        obj/test_nx_type.cpp
         parser/test_ast.cpp
         parser/test_lexer.cpp
         parser/test_parser.cpp

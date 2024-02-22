@@ -10,6 +10,8 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(natrix_lib STATIC
+        src/obj/defs.c
+        src/obj/nx_bool.c
         src/obj/nx_int.c
         src/obj/nx_list.c
         src/obj/nx_object_array.c

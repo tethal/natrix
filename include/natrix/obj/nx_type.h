@@ -46,9 +46,10 @@ extern "C" {
  * A type is also an object, so it has a header with type pointing to itself. Types are immutable.
  */
 typedef struct NxType {
-    NxObject header;                    //!< Header common to all natrix objects
-    const char *name;                   //!< Name of the type, statically allocated
-    GcTraceFn gc_trace_fn;              //!< Function to trace pointers in objects of this type
+    NxObject header;                                //!< Header common to all natrix objects
+    const char *name;                               //!< Name of the type, statically allocated
+    GcTraceFn gc_trace_fn;                          //!< Function to trace pointers in objects of this type
+    NxObject *(*as_bool_fn)(NxObject *self);        //!< Converts an object of this type to a boolean
 } NxType;
 
 /**

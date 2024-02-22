@@ -47,6 +47,14 @@ static inline void nxo_unroot(NxObject *obj) {
     gc_unroot(&obj->gc_header);
 }
 
+
+/**
+ * \brief Converts an object to a boolean.
+ * \param obj the object to convert
+ * \return the object as a natrix `bool` value
+ */
+NxObject *nxo_as_bool(NxObject *obj);
+
 #ifdef __cplusplus
 }
 #endif

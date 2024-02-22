@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "natrix/obj/nx_bool.h"
 #include "natrix/obj/nx_int.h"
 #include "natrix/obj/nx_list.h"
 #include "natrix/obj/nx_str.h"
@@ -256,17 +257,17 @@ static NxObject *eval_expr(Env *env, const Expr *expr) {
 static void exec_stmts(Env *env, const Stmt *stmt);
 
 /**
- * \brief Evaluates an expression, checks that it is an integer, and returns the result as a boolean.
+ * \brief Evaluates an expression and returns the result as a boolean value.
  * \param env the environment for variable lookup
  * \param expr the condition expression
  * \return the result of the condition
  */
 static bool eval_cond(Env *env, const Expr *expr) {
     NxObject *value = eval_expr(env, expr);
-    if (!nx_int_is_instance(value)) {
-        PANIC("Condition must be an integer");
-    }
-    return nx_int_get_value(value) != 0;
+    nxo_root(value);
+    NxObject *res = nxo_as_bool(value);
+    nxo_unroot(value);
+    return nx_bool_is_true(res);
 }
 
 /**

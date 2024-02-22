@@ -11,6 +11,7 @@
  */
 
 #include "natrix/obj/nx_int.h"
+#include "natrix/obj/nx_bool.h"
 
 //! The minimum cached integer value.
 #define CACHE_MIN (-1)
@@ -44,6 +45,13 @@ NxObject *nx_int_create(int64_t value) {
     return &obj->header;
 }
 
+//! Implementation of the `as_bool` method for the `int` type.
+static NxObject *nx_int_as_bool(NxObject *self) {
+    assert(nx_int_is_instance(self));
+    return nx_bool_wrap(((NxInt *) self)->value != 0);
+}
+
 const NxType nx_type_int = {
         NX_TYPE_HEADER_INIT("int", gc_trace_nop),
+        .as_bool_fn = nx_int_as_bool,
 };

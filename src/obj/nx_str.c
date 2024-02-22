@@ -13,6 +13,7 @@
 #include "natrix/obj/nx_str.h"
 #include <assert.h>
 #include <string.h>
+#include "natrix/obj/nx_bool.h"
 
 /**
  * \brief Allocates but does not initialize a new `str` object.
@@ -47,6 +48,13 @@ NxObject *nx_str_concat(NxObject *left, NxObject *right) {
     return &result->header;
 }
 
+//! Implementation of the `as_bool` method for the `str` type.
+static NxObject *nx_str_as_bool(NxObject *self) {
+    assert(nx_str_is_instance(self));
+    return nx_bool_wrap(nx_str_get_length(self) > 0);
+}
+
 const NxType nx_type_str = {
         NX_TYPE_HEADER_INIT("str", gc_trace_nop),
+        .as_bool_fn = nx_str_as_bool,
 };

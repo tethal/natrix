@@ -6,6 +6,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "natrix/obj/nx_bool.h"
 #include "natrix/obj/nx_int.h"
 #include "natrix/obj/nx_list.h"
 #include "../gc_state.h"
@@ -39,4 +40,16 @@ TEST(NxListTest, Append) {
     EXPECT_FALSE(gc_state.is_valid(list));
     EXPECT_FALSE(gc_state.is_valid(obj));
     EXPECT_TRUE(gc_state.check_count(0));
+}
+
+TEST(NxListTest, AsBool) {
+    NxObject *list = nx_list_create(1);
+    nxo_root(list);
+    EXPECT_EQ(nxo_as_bool(list), nx_false);
+    NxObject *obj = nx_int_create(1234);
+    nxo_root(obj);
+    nx_list_append(list, obj);
+    nxo_unroot(obj);
+    EXPECT_EQ(nxo_as_bool(list), nx_true);
+    nxo_unroot(list);
 }

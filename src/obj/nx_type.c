@@ -11,7 +11,15 @@
  */
 
 #include "natrix/obj/nx_type.h"
+#include "natrix/obj/nx_bool.h"
+
+//! Implementation of the `as_bool` method for the `type` type.
+static NxObject *nx_type_as_bool(NxObject *self) {
+    (void) self;
+    return nx_true;
+}
 
 const NxType nx_type_type = {
         NX_TYPE_HEADER_INIT("type", gc_trace_nop),
+        .as_bool_fn = nx_type_as_bool,
 };
