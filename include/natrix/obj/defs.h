@@ -47,6 +47,13 @@ static inline void nxo_unroot(NxObject *obj) {
     gc_unroot(&obj->gc_header);
 }
 
+/**
+ * \brief Convenience function for checking whether a natrix object is a valid index to a sequence of given length.
+ * \param index the index to check, must be an instance of `int`
+ * \param len the length of the sequence, must be non-negative
+ * \return the index as a number between 0 and len - 1
+ */
+int64_t nxo_check_index(NxObject *index, int64_t len);
 
 /**
  * \brief Converts an object to a boolean.
@@ -54,6 +61,22 @@ static inline void nxo_unroot(NxObject *obj) {
  * \return the object as a natrix `bool` value
  */
 NxObject *nxo_as_bool(NxObject *obj);
+
+/**
+ * \brief Subscript operator for natrix objects.
+ * \param obj the object to index
+ * \param index the index to use
+ * \return the element at the given index
+ */
+NxObject *nxo_get_element(NxObject *obj, NxObject *index);
+
+/**
+ * \brief Subscript assignment operator for natrix objects.
+ * \param obj the object to index
+ * \param index the index to use
+ * \param value the value to assign
+ */
+void nxo_set_element(NxObject *obj, NxObject *index, NxObject *value);
 
 #ifdef __cplusplus
 }

@@ -48,4 +48,6 @@ static NxObject *nx_bool_as_bool(NxObject *self) {
 const NxType nx_type_bool = {
         NX_TYPE_HEADER_INIT("bool", gc_trace_nop),
         .as_bool_fn = nx_bool_as_bool,
+        .get_element_fn = NULL,
+        .set_element_fn = NULL,
 };

@@ -53,3 +53,17 @@ TEST(NxListTest, AsBool) {
     EXPECT_EQ(nxo_as_bool(list), nx_true);
     nxo_unroot(list);
 }
+
+TEST(NxListTest, GetSetElement) {
+    NxObject *list = nx_list_create(1);
+    nxo_root(list);
+    EXPECT_EQ(nxo_as_bool(list), nx_false);
+    NxObject *obj = nx_int_create(1234);
+    nxo_root(obj);
+    nx_list_append(list, obj);
+    EXPECT_EQ(nxo_get_element(list, nx_int_create(0)), obj);
+    nxo_set_element(list, nx_int_create(0), list);
+    EXPECT_EQ(nxo_get_element(list, nx_int_create(0)), list);
+    nxo_unroot(obj);
+    nxo_unroot(list);
+}

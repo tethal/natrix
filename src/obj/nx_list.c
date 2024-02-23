@@ -51,7 +51,25 @@ static NxObject *nx_list_as_bool(NxObject *self) {
     return nx_bool_wrap(((NxList *) self)->length > 0);
 }
 
+//! Implementation of the `get_element` method for the `list` type.
+static NxObject *nx_list_get_element(NxObject *self, NxObject *index) {
+    assert(nx_list_is_instance(self));
+    NxList *l = (NxList *) self;
+    int64_t i = nxo_check_index(index, l->length);
+    return l->items->data[i];
+}
+
+//! Implementation of the `set_element` method for the `list` type.
+static void nx_list_set_element(NxObject *self, NxObject *index, NxObject *value) {
+    assert(nx_list_is_instance(self));
+    NxList *l = (NxList *) self;
+    int64_t i = nxo_check_index(index, l->length);
+    l->items->data[i] = value;
+}
+
 const NxType nx_type_list = {
         NX_TYPE_HEADER_INIT("list", nx_list_gc_trace),
         .as_bool_fn = nx_list_as_bool,
+        .get_element_fn = nx_list_get_element,
+        .set_element_fn = nx_list_set_element,
 };

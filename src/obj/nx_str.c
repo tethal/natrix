@@ -14,6 +14,8 @@
 #include <assert.h>
 #include <string.h>
 #include "natrix/obj/nx_bool.h"
+#include "natrix/obj/nx_int.h"
+#include "natrix/util/panic.h"
 
 /**
  * \brief Allocates but does not initialize a new `str` object.
@@ -54,7 +56,16 @@ static NxObject *nx_str_as_bool(NxObject *self) {
     return nx_bool_wrap(nx_str_get_length(self) > 0);
 }
 
+//! Implementation of the `get_element` method for the `str` type.
+static NxObject *nx_str_get_element(NxObject *self, NxObject *index) {
+    assert(nx_str_is_instance(self));
+    int64_t i = nxo_check_index(index, nx_str_get_length(self));
+    return nx_str_create(nx_str_get_cstr(self) + i, 1);
+}
+
 const NxType nx_type_str = {
         NX_TYPE_HEADER_INIT("str", gc_trace_nop),
         .as_bool_fn = nx_str_as_bool,
+        .get_element_fn = nx_str_get_element,
+        .set_element_fn = NULL,
 };

@@ -50,6 +50,8 @@ typedef struct NxType {
     const char *name;                               //!< Name of the type, statically allocated
     GcTraceFn gc_trace_fn;                          //!< Function to trace pointers in objects of this type
     NxObject *(*as_bool_fn)(NxObject *self);        //!< Converts an object of this type to a boolean
+    NxObject *(*get_element_fn)(NxObject *self, NxObject *index);        //!< Gets an element at the given index
+    void (*set_element_fn)(NxObject *self, NxObject *index, NxObject *value);        //!< Sets an element at the given index
 } NxType;
 
 /**

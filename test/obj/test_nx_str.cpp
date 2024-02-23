@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include "natrix/obj/nx_bool.h"
 #include "natrix/obj/nx_str.h"
+#include "natrix/obj/nx_int.h"
 
 TEST(NxStrTest, CreateAddsNullTerminator) {
     NxObject *str = nx_str_create("Abcd", 3);
@@ -36,4 +37,14 @@ TEST(NxStrTest, AsBool) {
     EXPECT_EQ(nxo_as_bool(str1), nx_false);
     NxObject *str2 = nx_str_create("Abc", 3);
     EXPECT_EQ(nxo_as_bool(str2), nx_true);
+}
+
+TEST(NxStrTest, GetElement) {
+    NxObject *str1 = nx_str_create("Abc", 3);
+    nxo_root(str1);
+    NxObject *str2 = nxo_get_element(str1, nx_int_create(1));
+    nxo_unroot(str1);
+    EXPECT_EQ(((NxStr *) str2)->length, 1);
+    EXPECT_EQ(((NxStr *) str2)->data[1], '\0');
+    EXPECT_STREQ(((NxStr *) str2)->data, "b");
 }

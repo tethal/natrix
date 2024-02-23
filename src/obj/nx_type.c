@@ -22,4 +22,6 @@ static NxObject *nx_type_as_bool(NxObject *self) {
 const NxType nx_type_type = {
         NX_TYPE_HEADER_INIT("type", gc_trace_nop),
         .as_bool_fn = nx_type_as_bool,
+        .get_element_fn = NULL,
+        .set_element_fn = NULL,
 };

@@ -54,4 +54,6 @@ static NxObject *nx_int_as_bool(NxObject *self) {
 const NxType nx_type_int = {
         NX_TYPE_HEADER_INIT("int", gc_trace_nop),
         .as_bool_fn = nx_int_as_bool,
+        .get_element_fn = NULL,
+        .set_element_fn = NULL,
 };

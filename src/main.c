@@ -233,19 +233,11 @@ static NxObject *eval_expr(Env *env, const Expr *expr) {
         }
         case EXPR_SUBSCRIPT: {
             NxObject *receiver = eval_expr(env, expr->subscript.receiver);
-            if (!nx_list_is_instance(receiver)) {
-                PANIC("Subscripted value must be a list");
-            }
             nxo_root(receiver);
             NxObject *index = eval_expr(env, expr->subscript.index);
-            if (!nx_int_is_instance(index)) {
-                PANIC("Index must be an integer");
-            }
-            int64_t i = nx_int_get_value(index);
-            if (i < 0 || (size_t) i >= nx_list_get_length(receiver)) {
-                PANIC("Index out of range");
-            }
-            NxObject *res = ((NxList *) receiver)->items->data[i];
+            nxo_root(index);
+            NxObject *res = nxo_get_element(receiver, index);
+            nxo_unroot(index);
             nxo_unroot(receiver);
             return res;
         }
@@ -288,19 +280,14 @@ static void exec_stmt(Env *env, const Stmt *stmt) {
                 env_set(env, start, end - start, rhs);
             } else if (stmt->assignment.left->kind == EXPR_SUBSCRIPT) {
                 NxObject *receiver = eval_expr(env, stmt->assignment.left->subscript.receiver);
-                if (!nx_list_is_instance(receiver)) {
-                    PANIC("Subscripted value must be a list");
-                }
                 nxo_root(receiver);
                 NxObject *index = eval_expr(env, stmt->assignment.left->subscript.index);
-                if (!nx_int_is_instance(index)) {
-                    PANIC("Index must be an integer");
-                }
-                int64_t i = nx_int_get_value(index);
-                if (i < 0 || (size_t) i >= nx_list_get_length(receiver)) {
-                    PANIC("Index out of range");
-                }
-                ((NxList *) receiver)->items->data[i] = eval_expr(env, stmt->assignment.right);
+                nxo_root(index);
+                NxObject *value = eval_expr(env, stmt->assignment.right);
+                nxo_root(value);
+                nxo_set_element(receiver, index, value);
+                nxo_unroot(value);
+                nxo_unroot(index);
                 nxo_unroot(receiver);
             } else {
                 assert(0);
